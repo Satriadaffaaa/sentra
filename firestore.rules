@@ -49,7 +49,7 @@ service cloud.firestore {
                       && hasAll(['name', 'balance', 'currency', 'type', 'icon', 'color'])
                       && request.resource.data.name is string
                       && request.resource.data.name.size() > 0
-                      && request.resource.data.balance is number
+                      && (request.resource.data.balance is number || request.resource.data.balance is string)
                       && request.resource.data.currency is string
                       && request.resource.data.type in ['bank', 'cash', 'e_wallet', 'credit_card', 'investment']
                       && request.resource.data.icon is string
@@ -57,7 +57,7 @@ service cloud.firestore {
         allow update: if isAuthOwner(userId)
                       && request.resource.data.name is string
                       && request.resource.data.name.size() > 0
-                      && request.resource.data.balance is number
+                      && (request.resource.data.balance is number || request.resource.data.balance is string)
                       && request.resource.data.currency is string
                       && request.resource.data.type in ['bank', 'cash', 'e_wallet', 'credit_card', 'investment'];
         allow delete: if isAuthOwner(userId);
@@ -70,16 +70,14 @@ service cloud.firestore {
         allow read:   if isAuthOwner(userId);
         allow create: if isAuthOwner(userId)
                       && hasAll(['amount', 'type', 'categoryId', 'description', 'date', 'accountId'])
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount > 0
+                      && (request.resource.data.amount is number || request.resource.data.amount is string)
                       && request.resource.data.type in ['income', 'expense', 'transfer']
                       && request.resource.data.categoryId is string
                       && request.resource.data.description is string
                       && request.resource.data.date is string
                       && request.resource.data.accountId is string;
         allow update: if isAuthOwner(userId)
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount > 0
+                      && (request.resource.data.amount is number || request.resource.data.amount is string)
                       && request.resource.data.type in ['income', 'expense', 'transfer'];
         allow delete: if isAuthOwner(userId);
       }
@@ -111,12 +109,10 @@ service cloud.firestore {
         allow create: if isAuthOwner(userId)
                       && hasAll(['categoryId', 'amountLimit'])
                       && request.resource.data.categoryId is string
-                      && request.resource.data.amountLimit is number
-                      && request.resource.data.amountLimit > 0;
+                      && (request.resource.data.amountLimit is number || request.resource.data.amountLimit is string);
         allow update: if isAuthOwner(userId)
                       && request.resource.data.categoryId is string
-                      && request.resource.data.amountLimit is number
-                      && request.resource.data.amountLimit > 0;
+                      && (request.resource.data.amountLimit is number || request.resource.data.amountLimit is string);
         allow delete: if isAuthOwner(userId);
       }
 
@@ -129,17 +125,13 @@ service cloud.firestore {
                       && hasAll(['name', 'targetAmount', 'currentAmount', 'targetDate'])
                       && request.resource.data.name is string
                       && request.resource.data.name.size() > 0
-                      && request.resource.data.targetAmount is number
-                      && request.resource.data.targetAmount > 0
-                      && request.resource.data.currentAmount is number
-                      && request.resource.data.currentAmount >= 0
+                      && (request.resource.data.targetAmount is number || request.resource.data.targetAmount is string)
+                      && (request.resource.data.currentAmount is number || request.resource.data.currentAmount is string)
                       && request.resource.data.targetDate is string;
         allow update: if isAuthOwner(userId)
                       && request.resource.data.name is string
-                      && request.resource.data.targetAmount is number
-                      && request.resource.data.targetAmount > 0
-                      && request.resource.data.currentAmount is number
-                      && request.resource.data.currentAmount >= 0;
+                      && (request.resource.data.targetAmount is number || request.resource.data.targetAmount is string)
+                      && (request.resource.data.currentAmount is number || request.resource.data.currentAmount is string);
         allow delete: if isAuthOwner(userId);
       }
 
@@ -153,18 +145,14 @@ service cloud.firestore {
                       && request.resource.data.name is string
                       && request.resource.data.name.size() > 0
                       && request.resource.data.type in ['debt', 'loan']
-                      && request.resource.data.totalAmount is number
-                      && request.resource.data.totalAmount > 0
-                      && request.resource.data.paidAmount is number
-                      && request.resource.data.paidAmount >= 0
+                      && (request.resource.data.totalAmount is number || request.resource.data.totalAmount is string)
+                      && (request.resource.data.paidAmount is number || request.resource.data.paidAmount is string)
                       && request.resource.data.dueDate is string
                       && request.resource.data.status in ['active', 'paid'];
         allow update: if isAuthOwner(userId)
                       && request.resource.data.type in ['debt', 'loan']
-                      && request.resource.data.totalAmount is number
-                      && request.resource.data.totalAmount > 0
-                      && request.resource.data.paidAmount is number
-                      && request.resource.data.paidAmount >= 0
+                      && (request.resource.data.totalAmount is number || request.resource.data.totalAmount is string)
+                      && (request.resource.data.paidAmount is number || request.resource.data.paidAmount is string)
                       && request.resource.data.status in ['active', 'paid'];
         allow delete: if isAuthOwner(userId);
       }
@@ -178,8 +166,7 @@ service cloud.firestore {
                       && hasAll(['name', 'amount', 'type', 'accountId', 'categoryId', 'nextDueDate', 'active'])
                       && request.resource.data.name is string
                       && request.resource.data.name.size() > 0
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount > 0
+                      && (request.resource.data.amount is number || request.resource.data.amount is string)
                       && request.resource.data.type in ['auto', 'manual']
                       && request.resource.data.accountId is string
                       && request.resource.data.categoryId is string
@@ -187,8 +174,7 @@ service cloud.firestore {
                       && request.resource.data.active is bool;
         allow update: if isAuthOwner(userId)
                       && request.resource.data.name is string
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount > 0
+                      && (request.resource.data.amount is number || request.resource.data.amount is string)
                       && request.resource.data.type in ['auto', 'manual']
                       && request.resource.data.active is bool;
         allow delete: if isAuthOwner(userId);
@@ -207,16 +193,14 @@ service cloud.firestore {
                            'stock', 'mutual_fund', 'crypto', 'gold',
                            'bond', 'deposit', 'p2p', 'property', 'other'
                          ]
-                      && request.resource.data.currentPrice is number
-                      && request.resource.data.currentPrice >= 0;
+                      && (request.resource.data.currentPrice is number || request.resource.data.currentPrice is string);
         allow update: if isAuthOwner(userId)
                       && request.resource.data.name is string
                       && request.resource.data.type in [
                            'stock', 'mutual_fund', 'crypto', 'gold',
                            'bond', 'deposit', 'p2p', 'property', 'other'
                          ]
-                      && request.resource.data.currentPrice is number
-                      && request.resource.data.currentPrice >= 0;
+                      && (request.resource.data.currentPrice is number || request.resource.data.currentPrice is string);
         allow delete: if isAuthOwner(userId);
       }
 
@@ -229,17 +213,13 @@ service cloud.firestore {
                       && hasAll(['investmentId', 'type', 'amount', 'quantity', 'pricePerUnit', 'date'])
                       && request.resource.data.investmentId is string
                       && request.resource.data.type in ['buy', 'sell', 'dividend', 'interest']
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount >= 0
-                      && request.resource.data.quantity is number
-                      && request.resource.data.quantity >= 0
-                      && request.resource.data.pricePerUnit is number
-                      && request.resource.data.pricePerUnit >= 0
+                      && (request.resource.data.amount is number || request.resource.data.amount is string)
+                      && (request.resource.data.quantity is number || request.resource.data.quantity is string)
+                      && (request.resource.data.pricePerUnit is number || request.resource.data.pricePerUnit is string)
                       && request.resource.data.date is string;
         allow update: if isAuthOwner(userId)
                       && request.resource.data.type in ['buy', 'sell', 'dividend', 'interest']
-                      && request.resource.data.amount is number
-                      && request.resource.data.amount >= 0;
+                      && (request.resource.data.amount is number || request.resource.data.amount is string);
         allow delete: if isAuthOwner(userId);
       }
 

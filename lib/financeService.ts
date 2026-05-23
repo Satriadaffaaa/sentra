@@ -17,8 +17,9 @@ import {
 import { 
   getAuth, onAuthStateChanged, signInAnonymously, Auth, User,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile,
-  GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect, sendPasswordResetEmail
 } from "firebase/auth";
+import { encrypt, decrypt } from "./crypto";
 import { Account, Transaction, Category, Budget, SavingsGoal, Debt, Subscription, Settings, Investment, InvestmentTransaction } from "./types";
 
 // --- Firebase Configuration & Initialization ---
@@ -138,6 +139,13 @@ const DEFAULT_INVESTMENT_TRANSACTIONS: InvestmentTransaction[] = [
   { id: "invtx-6", investmentId: "inv-1", type: "dividend", amount: 250000, quantity: 0, pricePerUnit: 0, date: getPastDateStr(10), accountId: "acc-2" },
 ];
 
+// Helper to derive a unique encryption key per user
+const getEncryptionKey = (): string => {
+  const userUid = auth?.currentUser?.uid || "demo-user";
+  const secretKey = firebaseConfig.apiKey || "antigravity-finance-key-9273";
+  return `${secretKey}_${userUid}`;
+};
+
 // --- Storage Key Utilities ---
 const STORAGE_PREFIX = "antigravity_finance_";
 const getStorageKey = (key: string): string => `${STORAGE_PREFIX}${key}`;
@@ -145,12 +153,25 @@ const getStorageKey = (key: string): string => `${STORAGE_PREFIX}${key}`;
 const getFromStorage = <T>(key: string, defaultValue: T): T => {
   if (typeof window === "undefined") return defaultValue;
   const data = localStorage.getItem(getStorageKey(key));
-  return data ? JSON.parse(data) : defaultValue;
+  if (!data) return defaultValue;
+  try {
+    const decrypted = decrypt(data, getEncryptionKey());
+    return JSON.parse(decrypted);
+  } catch (e) {
+    // Fallback if data was stored unencrypted
+    try {
+      return JSON.parse(data);
+    } catch (err) {
+      return defaultValue;
+    }
+  }
 };
 
 const saveToStorage = <T>(key: string, value: T): void => {
   if (typeof window === "undefined") return;
-  localStorage.setItem(getStorageKey(key), JSON.stringify(value));
+  const jsonStr = JSON.stringify(value);
+  const encrypted = encrypt(jsonStr, getEncryptionKey());
+  localStorage.setItem(getStorageKey(key), encrypted);
 };
 
 // Initialize Local Storage with mock data if empty
@@ -275,7 +296,20 @@ export const FinanceService = {
   loginWithGoogle: async (): Promise<any> => {
     if (isFirebaseEnabled() && auth) {
       const provider = new GoogleAuthProvider();
-      return signInWithPopup(auth, provider);
+      provider.setCustomParameters({ prompt: 'select_account' });
+      try {
+        return await signInWithPopup(auth, provider);
+      } catch (error: any) {
+        console.warn("signInWithPopup failed, falling back to signInWithRedirect", error);
+        if (
+          error.code === "auth/popup-blocked" ||
+          error.code === "auth/cancelled-popup-request" ||
+          error.code === "auth/popup-closed-by-user"
+        ) {
+          return signInWithRedirect(auth, provider);
+        }
+        throw error;
+      }
     }
     return { user: { uid: "demo-user", email: "google-user@gmail.com", displayName: "Google User" } };
   },
@@ -319,13 +353,31 @@ export const FinanceService = {
     let transactions: Transaction[] = [];
 
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const accRef = collection(db, "users", auth.currentUser.uid, "accounts");
       const accSnap = await getDocs(accRef);
-      accounts = accSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account));
+      accounts = accSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key),
+          balance: Number(decrypt(data.balance, key)),
+          initialBalance: data.initialBalance !== undefined ? Number(decrypt(data.initialBalance, key)) : undefined
+        } as Account;
+      });
 
       const txRef = collection(db, "users", auth.currentUser.uid, "transactions");
       const txSnap = await getDocs(txRef);
-      transactions = txSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+      transactions = txSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          description: decrypt(data.description, key),
+          amount: Number(decrypt(data.amount, key))
+        } as Transaction;
+      });
     } else {
       accounts = getFromStorage<Account[]>("accounts", DEFAULT_ACCOUNTS);
       transactions = getFromStorage<Transaction[]>("transactions", DEFAULT_TRANSACTIONS);
@@ -336,13 +388,20 @@ export const FinanceService = {
 
   saveAccount: async (account: Omit<Account, "id"> & { id?: string }): Promise<Account> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const initialBal = (account as any).initialBalance || account.balance || 0;
+      const encryptedAccount = {
+        ...account,
+        name: encrypt(account.name, key),
+        balance: encrypt(String(account.balance), key),
+        initialBalance: encrypt(String(initialBal), key)
+      };
       const accRef = collection(db, "users", auth.currentUser.uid, "accounts");
       if (account.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "accounts", account.id);
-        await updateDoc(docRef, account as any);
+        await updateDoc(docRef, encryptedAccount as any);
       } else {
-        const initialBal = (account as any).initialBalance || account.balance || 0;
-        const docRef = await addDoc(accRef, { ...account, initialBalance: initialBal });
+        const docRef = await addDoc(accRef, encryptedAccount);
         account.id = docRef.id;
       }
     } else {
@@ -375,9 +434,18 @@ export const FinanceService = {
   // --- Transactions Manager ---
   getTransactions: async (): Promise<Transaction[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const txRef = collection(db, "users", auth.currentUser.uid, "transactions");
       const txSnap = await getDocs(txRef);
-      return txSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+      return txSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          description: decrypt(data.description, key),
+          amount: Number(decrypt(data.amount, key))
+        } as Transaction;
+      });
     }
     const txs = getFromStorage<Transaction[]>("transactions", DEFAULT_TRANSACTIONS);
     
@@ -408,8 +476,14 @@ export const FinanceService = {
     newTx.amount = Number(newTx.amount);
 
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedTx = {
+        ...newTx,
+        description: encrypt(newTx.description, key),
+        amount: encrypt(String(newTx.amount), key)
+      };
       const txRef = collection(db, "users", auth.currentUser.uid, "transactions");
-      const docRef = await addDoc(txRef, newTx);
+      const docRef = await addDoc(txRef, encryptedTx);
       newTx.id = docRef.id;
     } else {
       const transactions = getFromStorage<Transaction[]>("transactions", DEFAULT_TRANSACTIONS);
@@ -435,6 +509,7 @@ export const FinanceService = {
   // --- Categories Manager ---
   getCategories: async (): Promise<Category[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const catRef = collection(db, "users", auth.currentUser.uid, "categories");
       const catSnap = await getDocs(catRef);
       if (catSnap.empty) {
@@ -442,23 +517,38 @@ export const FinanceService = {
         for (const cat of DEFAULT_CATEGORIES) {
           const { id, ...catData } = cat;
           const docRef = doc(db, "users", auth.currentUser.uid, "categories", id);
-          await setDoc(docRef, catData);
+          await setDoc(docRef, {
+            ...catData,
+            name: encrypt(cat.name, key)
+          });
         }
         return DEFAULT_CATEGORIES;
       }
-      return catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      return catSnap.docs.map(doc => {
+        const data = doc.data() as Category;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key)
+        } as Category;
+      });
     }
     return getFromStorage<Category[]>("categories", DEFAULT_CATEGORIES);
   },
 
   saveCategory: async (category: Omit<Category, "id"> & { id?: string }): Promise<Category> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedCat = {
+        ...category,
+        name: encrypt(category.name, key)
+      };
       const catRef = collection(db, "users", auth.currentUser.uid, "categories");
       if (category.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "categories", category.id);
-        await updateDoc(docRef, category as any);
+        await updateDoc(docRef, encryptedCat as any);
       } else {
-        const docRef = await addDoc(catRef, category);
+        const docRef = await addDoc(catRef, encryptedCat);
         category.id = docRef.id;
       }
     } else {
@@ -490,9 +580,17 @@ export const FinanceService = {
   // --- Budgets Manager ---
   getBudgets: async (): Promise<Budget[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const budRef = collection(db, "users", auth.currentUser.uid, "budgets");
       const budSnap = await getDocs(budRef);
-      return budSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Budget));
+      return budSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          amountLimit: Number(decrypt(data.amountLimit, key))
+        } as Budget;
+      });
     }
     return getFromStorage<Budget[]>("budgets", DEFAULT_BUDGETS);
   },
@@ -500,12 +598,17 @@ export const FinanceService = {
   saveBudget: async (budget: Omit<Budget, "id"> & { id?: string }): Promise<Budget> => {
     budget.amountLimit = Number(budget.amountLimit);
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedBudget = {
+        ...budget,
+        amountLimit: encrypt(String(budget.amountLimit), key)
+      };
       const budRef = collection(db, "users", auth.currentUser.uid, "budgets");
       if (budget.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "budgets", budget.id);
-        await updateDoc(docRef, budget as any);
+        await updateDoc(docRef, encryptedBudget as any);
       } else {
-        const docRef = await addDoc(budRef, budget);
+        const docRef = await addDoc(budRef, encryptedBudget);
         budget.id = docRef.id;
       }
     } else {
@@ -537,9 +640,19 @@ export const FinanceService = {
   // --- Savings Goals Manager ---
   getSavingsGoals: async (): Promise<SavingsGoal[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const sgRef = collection(db, "users", auth.currentUser.uid, "savingsGoals");
       const sgSnap = await getDocs(sgRef);
-      return sgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavingsGoal));
+      return sgSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key),
+          targetAmount: Number(decrypt(data.targetAmount, key)),
+          currentAmount: Number(decrypt(data.currentAmount, key))
+        } as SavingsGoal;
+      });
     }
     return getFromStorage<SavingsGoal[]>("savingsGoals", DEFAULT_SAVINGS_GOALS);
   },
@@ -549,12 +662,19 @@ export const FinanceService = {
     goal.currentAmount = Number(goal.currentAmount);
     
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedGoal = {
+        ...goal,
+        name: encrypt(goal.name, key),
+        targetAmount: encrypt(String(goal.targetAmount), key),
+        currentAmount: encrypt(String(goal.currentAmount), key)
+      };
       const sgRef = collection(db, "users", auth.currentUser.uid, "savingsGoals");
       if (goal.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "savingsGoals", goal.id);
-        await updateDoc(docRef, goal as any);
+        await updateDoc(docRef, encryptedGoal as any);
       } else {
-        const docRef = await addDoc(sgRef, goal);
+        const docRef = await addDoc(sgRef, encryptedGoal);
         goal.id = docRef.id;
       }
     } else {
@@ -586,9 +706,19 @@ export const FinanceService = {
   // --- Debts Manager ---
   getDebts: async (): Promise<Debt[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const debtRef = collection(db, "users", auth.currentUser.uid, "debts");
       const debtSnap = await getDocs(debtRef);
-      return debtSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Debt));
+      return debtSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key),
+          totalAmount: Number(decrypt(data.totalAmount, key)),
+          paidAmount: Number(decrypt(data.paidAmount, key))
+        } as Debt;
+      });
     }
     return getFromStorage<Debt[]>("debts", DEFAULT_DEBTS);
   },
@@ -598,12 +728,19 @@ export const FinanceService = {
     debt.paidAmount = Number(debt.paidAmount);
 
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedDebt = {
+        ...debt,
+        name: encrypt(debt.name, key),
+        totalAmount: encrypt(String(debt.totalAmount), key),
+        paidAmount: encrypt(String(debt.paidAmount), key)
+      };
       const debtRef = collection(db, "users", auth.currentUser.uid, "debts");
       if (debt.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "debts", debt.id);
-        await updateDoc(docRef, debt as any);
+        await updateDoc(docRef, encryptedDebt as any);
       } else {
-        const docRef = await addDoc(debtRef, debt);
+        const docRef = await addDoc(debtRef, encryptedDebt);
         debt.id = docRef.id;
       }
     } else {
@@ -635,9 +772,18 @@ export const FinanceService = {
   // --- Subscriptions Manager ---
   getSubscriptions: async (): Promise<Subscription[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const subRef = collection(db, "users", auth.currentUser.uid, "subscriptions");
       const subSnap = await getDocs(subRef);
-      return subSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subscription));
+      return subSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key),
+          amount: Number(decrypt(data.amount, key))
+        } as Subscription;
+      });
     }
     return getFromStorage<Subscription[]>("subscriptions", DEFAULT_SUBSCRIPTIONS);
   },
@@ -646,12 +792,18 @@ export const FinanceService = {
     sub.amount = Number(sub.amount);
 
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedSub = {
+        ...sub,
+        name: encrypt(sub.name, key),
+        amount: encrypt(String(sub.amount), key)
+      };
       const subRef = collection(db, "users", auth.currentUser.uid, "subscriptions");
       if (sub.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "subscriptions", sub.id);
-        await updateDoc(docRef, sub as any);
+        await updateDoc(docRef, encryptedSub as any);
       } else {
-        const docRef = await addDoc(subRef, sub);
+        const docRef = await addDoc(subRef, encryptedSub);
         sub.id = docRef.id;
       }
     } else {
@@ -715,21 +867,38 @@ export const FinanceService = {
   // --- Investment Manager ---
   getInvestments: async (): Promise<Investment[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const invRef = collection(db, "users", auth.currentUser.uid, "investments");
       const invSnap = await getDocs(invRef);
-      return invSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Investment));
+      return invSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          name: decrypt(data.name, key),
+          description: decrypt(data.description, key),
+          currentPrice: Number(decrypt(data.currentPrice, key))
+        } as Investment;
+      });
     }
     return getFromStorage<Investment[]>("investments", DEFAULT_INVESTMENTS);
   },
 
   saveInvestment: async (inv: Omit<Investment, "id"> & { id?: string }): Promise<Investment> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedInv = {
+        ...inv,
+        name: encrypt(inv.name, key),
+        description: encrypt(inv.description, key),
+        currentPrice: encrypt(String(inv.currentPrice), key)
+      };
       const invRef = collection(db, "users", auth.currentUser.uid, "investments");
       if (inv.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "investments", inv.id);
-        await updateDoc(docRef, inv as any);
+        await updateDoc(docRef, encryptedInv as any);
       } else {
-        const docRef = await addDoc(invRef, inv);
+        const docRef = await addDoc(invRef, encryptedInv);
         inv.id = docRef.id;
       }
     } else {
@@ -773,9 +942,19 @@ export const FinanceService = {
   // --- Investment Transactions Manager ---
   getInvestmentTransactions: async (): Promise<InvestmentTransaction[]> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const txRef = collection(db, "users", auth.currentUser.uid, "investmentTransactions");
       const txSnap = await getDocs(txRef);
-      return txSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InvestmentTransaction));
+      return txSnap.docs.map(doc => {
+        const data = doc.data() as any;
+        return {
+          ...data,
+          id: doc.id,
+          amount: Number(decrypt(data.amount, key)),
+          quantity: Number(decrypt(data.quantity, key)),
+          pricePerUnit: Number(decrypt(data.pricePerUnit, key))
+        } as InvestmentTransaction;
+      });
     }
     return getFromStorage<InvestmentTransaction[]>("investmentTransactions", DEFAULT_INVESTMENT_TRANSACTIONS);
   },
@@ -788,8 +967,15 @@ export const FinanceService = {
     if (!newTx.date) newTx.date = new Date().toISOString().split("T")[0];
 
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedTx = {
+        ...newTx,
+        amount: encrypt(String(newTx.amount), key),
+        quantity: encrypt(String(newTx.quantity), key),
+        pricePerUnit: encrypt(String(newTx.pricePerUnit), key)
+      };
       const txRef = collection(db, "users", auth.currentUser.uid, "investmentTransactions");
-      const docRef = await addDoc(txRef, newTx);
+      const docRef = await addDoc(txRef, encryptedTx);
       newTx.id = docRef.id;
     } else {
       const invTxs = getFromStorage<InvestmentTransaction[]>("investmentTransactions", DEFAULT_INVESTMENT_TRANSACTIONS);

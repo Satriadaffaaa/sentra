@@ -121,13 +121,16 @@ export default function AppShell({ children }: AppShellProps) {
 
   if (authLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "#04342C", color: "#E1F5EE" }}>
-        <div style={{ border: "4px solid rgba(93, 202, 165, 0.2)", borderTop: "4px solid #5DCAA5", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", marginBottom: "16px" }}></div>
-        <span style={{ fontFamily: "Outfit, sans-serif", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", fontSize: "12px" }}>Menyelaraskan Akun...</span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "#04342C" }}>
+        <img 
+          src="/icon-dark.png" 
+          alt="Sentra Logo" 
+          style={{ width: "96px", height: "96px", borderRadius: "24px", animation: "pulse 2s infinite ease-in-out" }}
+        />
         <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
           }
         `}</style>
       </div>

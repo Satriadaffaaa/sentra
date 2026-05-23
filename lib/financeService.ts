@@ -33,7 +33,6 @@ const firebaseConfig = {
 
 const isFirebaseEnabled = (): boolean => {
   return !!(
-    typeof window !== "undefined" &&
     firebaseConfig.apiKey &&
     firebaseConfig.projectId
   );

@@ -229,12 +229,7 @@ service cloud.firestore {
       match /config/{document} {
         allow read:   if isAuthOwner(userId);
         allow write:  if isAuthOwner(userId)
-                      && document == 'settings'
-                      && hasAll(['baseCurrency', 'exchangeRates'])
-                      && request.resource.data.baseCurrency is string
-                      && request.resource.data.exchangeRates is map
-                      && (!('passcodeEnabled' in request.resource.data) || request.resource.data.passcodeEnabled is bool)
-                      && (!('passcodePIN' in request.resource.data) || (request.resource.data.passcodePIN is string && (request.resource.data.passcodePIN.size() == 0 || request.resource.data.passcodePIN.size() == 4 || request.resource.data.passcodePIN.startsWith('enc_'))));
+                      && document == 'settings';
       }
 
     } // end match /users/{userId}

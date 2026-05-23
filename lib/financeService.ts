@@ -248,6 +248,21 @@ const computeAccountBalances = (accounts: Account[], transactions: Transaction[]
   });
 };
 
+/**
+ * Helper to clean payload data before sending to Firestore.
+ * Removes the 'id' field if it exists, and deletes any fields that are undefined.
+ */
+const cleanForFirestore = <T extends Record<string, any>>(obj: T): any => {
+  const clean = { ...obj };
+  delete clean.id;
+  Object.keys(clean).forEach(key => {
+    if (clean[key] === undefined) {
+      delete clean[key];
+    }
+  });
+  return clean;
+};
+
 // --- Unified Finance Database Interface ---
 export const FinanceService = {
   
@@ -352,8 +367,9 @@ export const FinanceService = {
         ...settings,
         passcodePIN: settings.passcodePIN ? encrypt(settings.passcodePIN, key) : ""
       };
+      const cleanData = cleanForFirestore(encryptedSettings);
       const docRef = doc(db, "users", auth.currentUser.uid, "config", "settings");
-      await setDoc(docRef, encryptedSettings, { merge: true });
+      await setDoc(docRef, cleanData, { merge: true });
     } else {
       saveToStorage<Settings>("settings", settings);
     }
@@ -409,12 +425,13 @@ export const FinanceService = {
         balance: encrypt(String(account.balance), key),
         initialBalance: encrypt(String(initialBal), key)
       };
+      const cleanData = cleanForFirestore(encryptedAccount);
       const accRef = collection(db, "users", auth.currentUser.uid, "accounts");
       if (account.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "accounts", account.id);
-        await updateDoc(docRef, encryptedAccount as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(accRef, encryptedAccount);
+        const docRef = await addDoc(accRef, cleanData);
         account.id = docRef.id;
       }
     } else {
@@ -495,8 +512,9 @@ export const FinanceService = {
         description: encrypt(newTx.description, key),
         amount: encrypt(String(newTx.amount), key)
       };
+      const cleanData = cleanForFirestore(encryptedTx);
       const txRef = collection(db, "users", auth.currentUser.uid, "transactions");
-      const docRef = await addDoc(txRef, encryptedTx);
+      const docRef = await addDoc(txRef, cleanData);
       newTx.id = docRef.id;
     } else {
       const transactions = getFromStorage<Transaction[]>("transactions", DEFAULT_TRANSACTIONS);
@@ -556,12 +574,13 @@ export const FinanceService = {
         ...category,
         name: encrypt(category.name, key)
       };
+      const cleanData = cleanForFirestore(encryptedCat);
       const catRef = collection(db, "users", auth.currentUser.uid, "categories");
       if (category.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "categories", category.id);
-        await updateDoc(docRef, encryptedCat as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(catRef, encryptedCat);
+        const docRef = await addDoc(catRef, cleanData);
         category.id = docRef.id;
       }
     } else {
@@ -616,12 +635,13 @@ export const FinanceService = {
         ...budget,
         amountLimit: encrypt(String(budget.amountLimit), key)
       };
+      const cleanData = cleanForFirestore(encryptedBudget);
       const budRef = collection(db, "users", auth.currentUser.uid, "budgets");
       if (budget.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "budgets", budget.id);
-        await updateDoc(docRef, encryptedBudget as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(budRef, encryptedBudget);
+        const docRef = await addDoc(budRef, cleanData);
         budget.id = docRef.id;
       }
     } else {
@@ -682,12 +702,13 @@ export const FinanceService = {
         targetAmount: encrypt(String(goal.targetAmount), key),
         currentAmount: encrypt(String(goal.currentAmount), key)
       };
+      const cleanData = cleanForFirestore(encryptedGoal);
       const sgRef = collection(db, "users", auth.currentUser.uid, "savingsGoals");
       if (goal.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "savingsGoals", goal.id);
-        await updateDoc(docRef, encryptedGoal as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(sgRef, encryptedGoal);
+        const docRef = await addDoc(sgRef, cleanData);
         goal.id = docRef.id;
       }
     } else {
@@ -748,12 +769,13 @@ export const FinanceService = {
         totalAmount: encrypt(String(debt.totalAmount), key),
         paidAmount: encrypt(String(debt.paidAmount), key)
       };
+      const cleanData = cleanForFirestore(encryptedDebt);
       const debtRef = collection(db, "users", auth.currentUser.uid, "debts");
       if (debt.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "debts", debt.id);
-        await updateDoc(docRef, encryptedDebt as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(debtRef, encryptedDebt);
+        const docRef = await addDoc(debtRef, cleanData);
         debt.id = docRef.id;
       }
     } else {
@@ -811,12 +833,13 @@ export const FinanceService = {
         name: encrypt(sub.name, key),
         amount: encrypt(String(sub.amount), key)
       };
+      const cleanData = cleanForFirestore(encryptedSub);
       const subRef = collection(db, "users", auth.currentUser.uid, "subscriptions");
       if (sub.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "subscriptions", sub.id);
-        await updateDoc(docRef, encryptedSub as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(subRef, encryptedSub);
+        const docRef = await addDoc(subRef, cleanData);
         sub.id = docRef.id;
       }
     } else {
@@ -908,12 +931,13 @@ export const FinanceService = {
         currentPrice: encrypt(String(inv.currentPrice), key),
         yieldRate: inv.yieldRate !== undefined && inv.yieldRate !== null ? encrypt(String(inv.yieldRate), key) : undefined
       };
+      const cleanData = cleanForFirestore(encryptedInv);
       const invRef = collection(db, "users", auth.currentUser.uid, "investments");
       if (inv.id) {
         const docRef = doc(db, "users", auth.currentUser.uid, "investments", inv.id);
-        await updateDoc(docRef, encryptedInv as any);
+        await updateDoc(docRef, cleanData);
       } else {
-        const docRef = await addDoc(invRef, encryptedInv);
+        const docRef = await addDoc(invRef, cleanData);
         inv.id = docRef.id;
       }
     } else {
@@ -989,8 +1013,9 @@ export const FinanceService = {
         quantity: encrypt(String(newTx.quantity), key),
         pricePerUnit: encrypt(String(newTx.pricePerUnit), key)
       };
+      const cleanData = cleanForFirestore(encryptedTx);
       const txRef = collection(db, "users", auth.currentUser.uid, "investmentTransactions");
-      const docRef = await addDoc(txRef, encryptedTx);
+      const docRef = await addDoc(txRef, cleanData);
       newTx.id = docRef.id;
     } else {
       const invTxs = getFromStorage<InvestmentTransaction[]>("investmentTransactions", DEFAULT_INVESTMENT_TRANSACTIONS);

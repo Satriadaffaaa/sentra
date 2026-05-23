@@ -1,0 +1,304 @@
+.budgetsRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Overview Widget CSS */
+.overviewCard {
+  padding: 28px;
+}
+
+.overviewRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .overviewRow {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .overviewDivider {
+    display: none;
+  }
+}
+
+.overviewItem {
+  flex: 1;
+}
+
+.overviewLbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.overviewVal {
+  font-family: var(--font-accent);
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+
+.overviewDivider {
+  width: 1px;
+  height: 48px;
+  background-color: var(--border-color);
+  margin: 0 32px;
+}
+
+.globalProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressBarContainer.large {
+  height: 12px;
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Budgets Grid Cards */
+.budgetsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .budgetsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .budgetsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.budgetCardItem {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative; /* Added because actions are absolute */
+}
+
+.cardActions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.budgetCardItem:hover .cardActions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cardTopInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.categoryMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.catIconLarge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.categoryMeta h4 {
+  font-family: var(--font-accent);
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.periodBadge {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.statusPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.statusPill.safe { background-color: var(--color-income-light); color: var(--color-income); }
+.statusPill.warning { background-color: rgba(var(--accent-warning-rgb), 0.08); color: var(--accent-warning); }
+.statusPill.exceeded { background-color: var(--color-expense-light); color: var(--color-expense); }
+
+.cardBudgetData {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dataRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.dataRow .lbl {
+  color: var(--text-secondary);
+}
+
+.dataRow .val {
+  color: var(--text-primary);
+}
+
+.progressBarContainer {
+  background-color: var(--border-subtle);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+.progressFill.success { background-color: var(--color-income); }
+.progressFill.warning { background-color: var(--accent-warning); }
+.progressFill.danger { background-color: var(--color-expense); }
+
+.budgetCardFooter {
+  font-size: 11px;
+  font-weight: 600;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.warningText { color: var(--color-expense); }
+.safeText { color: var(--text-muted); }
+
+.emptyBudgets {
+  grid-column: span 3;
+  padding: 60px;
+}
+.subText {
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Modal Forms styles */
+.formModal {
+  max-width: 440px;
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.textExpense { color: var(--color-expense); }
+.textIncome { color: var(--color-income); }
+.iconBtnSm {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.iconBtnSm:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.iconBtnSm.delete:hover {
+  background-color: var(--color-expense-light);
+  color: var(--color-expense);
+}
+
+/* Modal Header & Body styling for consistency */
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  font-family: var(--font-accent);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .budgetCardItem {
+    display: flex;
+    flex-direction: column;
+  }
+  .cardActions {
+    opacity: 1;
+    transform: none;
+    position: static;
+    margin-top: 14px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 10px;
+    justify-content: flex-end;
+    order: 5;
+  }
+}
+

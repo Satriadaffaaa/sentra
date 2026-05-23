@@ -1,0 +1,364 @@
+.accountsRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.accountsLayout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .accountsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.accountsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .accountsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.accountCardItem {
+  cursor: pointer;
+  position: relative;
+  padding: 20px;
+}
+
+.accountCardItem:hover {
+  transform: translateY(-3px);
+}
+
+.accountCardItem.selected {
+  box-shadow: var(--shadow-lg);
+  border-top: 1px solid var(--border-focus);
+  border-right: 1px solid var(--border-focus);
+  border-bottom: 1px solid var(--border-focus);
+}
+
+/* Overlay actions for hover states */
+.cardActionsOverlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accountCardItem:hover .cardActionsOverlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.iconBtnSm {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.iconBtnSm:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.iconBtnSm.delete:hover {
+  background-color: var(--color-expense-light);
+  color: var(--color-expense);
+}
+
+.accCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.accIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.accTypeBadge {
+  color: var(--text-muted);
+}
+
+.accName {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.accBalance {
+  font-family: var(--font-accent);
+  font-size: 20px;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.accInitialHint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 6px;
+}
+
+/* Detail Column Pane */
+.detailsInnerCard {
+  padding: 24px;
+  min-height: 400px;
+}
+
+.detailsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.detailsIcon {
+  font-size: 32px;
+}
+
+.detailsHeader h3 {
+  font-family: var(--font-accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.badgeType {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background-color: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.detailsBalance {
+  font-family: var(--font-accent);
+  font-size: 24px;
+  color: var(--text-primary);
+}
+
+/* Selected Account logs */
+.logTitle {
+  font-family: var(--font-accent);
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.logListVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logTxRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.logTxRow:last-child {
+  border-bottom: none;
+}
+
+.logLeftCol {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logCatIcon {
+  width: 32px;
+  height: 32px;
+  background-color: var(--bg-input);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.logDescInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logDesc {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.logDate {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.logRightCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.transferDirection {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.logAmount {
+  font-family: var(--font-accent);
+  font-size: 13px;
+}
+.logAmount.expense { color: var(--color-expense); }
+.logAmount.income { color: var(--color-income); }
+
+/* Modal Forms styles */
+.formModal {
+  max-width: 480px;
+}
+
+.formRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.inputHint {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.colorPaletteSelection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  height: 42px;
+}
+
+.colorDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  padding: 0;
+}
+.colorDot.active {
+  border-color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.submitBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+}
+
+/* Individual classes for helper references if needed */
+.selected {}
+.delete {}
+.expense {}
+.income {}
+.active {}
+
+/* Modal Header & Body styling for consistency */
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  font-family: var(--font-accent);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .accountCardItem {
+    display: flex;
+    flex-direction: column;
+  }
+  .cardActionsOverlay {
+    opacity: 1;
+    transform: none;
+    position: static;
+    margin-top: 14px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 10px;
+    justify-content: flex-end;
+    order: 4;
+  }
+}
+

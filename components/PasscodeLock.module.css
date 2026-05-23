@@ -1,0 +1,176 @@
+.lockOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, #064E42 0%, #02231E 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  font-family: 'Outfit', sans-serif;
+  color: #E1F5EE;
+}
+
+.lockContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.lockHeader {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.logoText {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: #E1F5EE;
+}
+
+.logoDot {
+  color: #5DCAA5;
+}
+
+.lockSubtitle {
+  font-size: 13px;
+  color: #8ABCA7;
+  margin-top: 8px;
+  letter-spacing: 0.5px;
+}
+
+.pinDisplaySection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.pinTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #A3D4C0;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+}
+
+.dotsContainer {
+  display: flex;
+  gap: 20px;
+}
+
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(93, 202, 165, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+}
+
+.filled {
+  background: #5DCAA5;
+  border-color: #5DCAA5;
+  box-shadow: 0 0 14px rgba(93, 202, 165, 0.7);
+  transform: scale(1.15);
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-12px); border-color: #FF6B6B; }
+  30%, 60%, 90% { transform: translateX(12px); border-color: #FF6B6B; }
+}
+
+.keypadContainer {
+  width: 100%;
+}
+
+.keypadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px 20px;
+  justify-items: center;
+}
+
+.keyButton {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid rgba(93, 202, 165, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  color: #E1F5EE;
+  font-size: 26px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.12s ease-out;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.keyButton:active {
+  transform: scale(0.9);
+  background: rgba(93, 202, 165, 0.25);
+  border-color: #5DCAA5;
+  box-shadow: 0 0 12px rgba(93, 202, 165, 0.2);
+}
+
+.dangerButton {
+  border-color: rgba(255, 107, 107, 0.2);
+  color: #FF6B6B;
+}
+
+.dangerButton:active {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: #FF6B6B;
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.2);
+}
+
+.buttonLabel {
+  font-size: 9px;
+  margin-top: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actionButton {
+  color: #8ABCA7;
+}
+
+.actionButton:active {
+  color: #E1F5EE;
+}
+
+/* Adjustments for smaller phone screens */
+@media (max-height: 600px) {
+  .lockHeader {
+    margin-bottom: 20px;
+  }
+  .pinDisplaySection {
+    margin-bottom: 24px;
+  }
+  .keyButton {
+    width: 60px;
+    height: 60px;
+    font-size: 20px;
+  }
+  .keypadGrid {
+    gap: 16px 12px;
+  }
+}

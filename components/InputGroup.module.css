@@ -1,0 +1,128 @@
+.formGroup {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.inputGroupContainer {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-smooth);
+  overflow: hidden;
+}
+
+.inputGroupContainer:focus-within {
+  border-color: var(--border-focus);
+  background-color: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb), 0.12);
+}
+
+.inputPrefix {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-color);
+  background-color: rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  gap: 6px;
+  user-select: none;
+  transition: var(--transition-smooth);
+}
+
+.inputSuffix {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-left: 1px solid var(--border-color);
+  background-color: rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  gap: 6px;
+  user-select: none;
+  transition: var(--transition-smooth);
+}
+
+.inputField {
+  flex: 1;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: 14px;
+  outline: none;
+  height: 42px;
+}
+
+.inputField:focus {
+  outline: none;
+}
+
+/* Custom dropdown chevron for select elements */
+select.inputField {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px;
+  padding-right: 38px;
+  cursor: pointer;
+}
+
+select.inputField::-ms-expand {
+  display: none;
+}
+
+/* Pointer cursors for better interactive feedback */
+input[type="date"].inputField {
+  cursor: pointer;
+}
+
+/* Input container active focus border-color matches */
+.inputGroupContainer:focus-within .inputPrefix {
+  border-color: var(--border-focus);
+  background-color: rgba(var(--color-brand-rgb), 0.03);
+  color: var(--color-brand);
+}
+
+.inputGroupContainer:focus-within .inputSuffix {
+  border-color: var(--border-focus);
+  background-color: rgba(var(--color-brand-rgb), 0.03);
+  color: var(--color-brand);
+}
+
+.prefixIconWrapper,
+.suffixIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.inputGroupContainer:focus-within .prefixIconWrapper,
+.inputGroupContainer:focus-within .suffixIconWrapper {
+  color: var(--color-brand);
+}

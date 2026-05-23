@@ -1,0 +1,157 @@
+.notificationPanel {
+  max-width: 420px;
+  height: 100%;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHeader {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleGroup h3 {
+  font-family: var(--font-accent);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notificationSettings {
+  background-color: var(--color-brand-light);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--color-brand);
+  font-weight: 500;
+}
+
+.settingsDesc {
+  flex: 1;
+}
+
+.btnSm {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+.notificationsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.notiItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.notiItem:hover {
+  background-color: var(--bg-app);
+}
+
+.notiBody {
+  flex: 1;
+}
+
+.notiMsg {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.notiTime {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.notiDelete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-smooth);
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notiItem:hover .notiDelete {
+  opacity: 1;
+}
+
+.notiDelete:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.panelFooter {
+  padding: 16px;
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-input);
+}
+
+.clearAllLink {
+  background: none;
+  border: none;
+  color: var(--color-brand);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+.clearAllLink:hover {
+  text-decoration: underline;
+}
+
+/* Helpers colors */
+.textSuccess { color: var(--color-income); }
+.textWarning { color: var(--accent-warning); }
+.textDanger { color: var(--color-expense); }
+.textBrand { color: var(--color-brand); }
+.textInfo { color: var(--color-transfer); }

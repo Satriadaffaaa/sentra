@@ -1,0 +1,628 @@
+.dashboardRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.dashboardWelcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboardWelcome h2 {
+  font-family: var(--font-accent);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+
+.welcomeSub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.dashboardSectionsFlow {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Widget Container Layout */
+.widgetWrapperCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.widgetDragBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.widgetLabelTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.widgetActionsWrap {
+  display: flex;
+  gap: 4px;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+.widgetWrapperCard:hover .widgetActionsWrap {
+  opacity: 1;
+}
+
+.widgetArrBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.widgetArrBtn:hover:not(:disabled) {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.widgetArrBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* KPI Grids */
+.dashboardGridKpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .dashboardGridKpi {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.kpiCard {
+  border-left: 5px solid var(--color-brand);
+}
+.kpiCard.brand { border-left-color: var(--color-brand); }
+.kpiCard.success { border-left-color: var(--color-income); }
+.kpiCard.danger { border-left-color: var(--color-expense); }
+
+.kpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kpiTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+}
+
+.iconWrap {
+  background-color: var(--color-brand-light);
+  color: var(--color-brand);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kpiCard.success .iconWrap { background-color: var(--color-income-light); }
+.kpiCard.danger .iconWrap { background-color: var(--color-expense-light); }
+
+.kpiValue {
+  font-family: var(--font-accent);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.kpiDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Charts Layout */
+.analyticsSection {
+  display: flex;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .analyticsSection {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.chartCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardTitle {
+  font-family: var(--font-accent);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* SVG Donut styling */
+.donutChartContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.svgWrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.donutSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.donutSlice {
+  transition: stroke-width 0.2s, transform 0.2s;
+}
+.donutSlice:hover {
+  stroke-width: 4;
+}
+
+.donutCenterText {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+  padding: 20px;
+}
+
+.centerIcon {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.centerLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.centerValue {
+  font-family: var(--font-accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.centerTotal {
+  font-family: var(--font-accent);
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.chartLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-smooth);
+}
+.legendItem:hover {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendText {
+  flex: 1;
+}
+
+.moreLegendLink {
+  font-size: 11px;
+  color: var(--color-brand);
+  text-decoration: none;
+  padding-left: 6px;
+  font-weight: 600;
+}
+
+.legendVal {
+  font-weight: 600;
+}
+
+/* SVG Area Chart styling */
+.areaChartContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+/* Tooltip styling for cashflow chart */
+.chartTooltip {
+  position: absolute;
+  top: 10px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.tooltipTitle {
+  font-weight: 700;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-weight: 600;
+}
+
+.tooltipIncome {
+  color: var(--color-income);
+}
+
+.tooltipExpense {
+  color: var(--color-expense);
+}
+
+.areaSvg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chartXLabels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.xLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.chartInfoBadges {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.infoBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.infoBadge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.infoBadge.inc .dot { background-color: var(--color-income); }
+.infoBadge.exp .dot { background-color: var(--color-expense); }
+
+/* Budget progress card */
+.cardHeaderFlex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.textLink {
+  font-size: 12px;
+  color: var(--color-brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+.textLink:hover {
+  text-decoration: underline;
+}
+
+.budgetListVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.budgetRowItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budgetMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.budgetName {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.budgetAmounts {
+  color: var(--text-muted);
+}
+
+.progressBarContainer {
+  background-color: var(--border-subtle);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+.progressFill.success { background-color: var(--color-income); }
+.progressFill.warning { background-color: var(--accent-warning); }
+.progressFill.danger { background-color: var(--color-expense); }
+
+/* Transaction list card */
+.txListVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.txRowItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.txRowItem:last-child {
+  border-bottom: none;
+}
+
+.txIconDesc {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.txCategoryIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.txDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.txDesc {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.txMetaInfo {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.txAmountCol {
+  font-family: var(--font-accent);
+  font-size: 14px;
+}
+.txAmountCol.expense { color: var(--color-expense); }
+.txAmountCol.income { color: var(--color-income); }
+.txAmountCol.transfer { color: var(--color-brand); }
+
+/* Hidden widgets panel */
+.hiddenWidgetsPanel {
+  margin-top: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hiddenWidgetsPanel h5 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hiddenButtonsRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Individual colors and statuses for utility usage */
+.brand {}
+.danger {}
+.inc {}
+.exp {}
+.success {}
+.warning {}
+.expense {}
+.income {}
+.transfer {}
+
+/* Health Widget styles */
+.healthWidgetContainer {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 8px 4px;
+}
+
+@media (max-width: 600px) {
+  .healthWidgetContainer {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+}
+
+.healthGaugeWrapper {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+}
+
+.healthGaugeSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.healthGaugeBg {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 3.5;
+}
+
+.healthGaugeValueArc {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s ease-out;
+}
+
+.healthGaugeCenterText {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.healthScoreNum {
+  font-family: var(--font-accent);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.healthScoreLabel {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.healthContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.healthStatusTitle {
+  font-family: var(--font-accent);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.healthStatusDesc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.healthActionBtn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .healthActionBtn {
+    align-self: center;
+  }
+}
+

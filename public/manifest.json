@@ -1,0 +1,25 @@
+{
+  "name": "Sentra Keuangan",
+  "short_name": "Sentra",
+  "description": "Website pencatatan keuangan pribadi komprehensif, cepat, interaktif dan aman.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#04342C",
+  "theme_color": "#1D9E75",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

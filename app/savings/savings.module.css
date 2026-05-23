@@ -1,0 +1,362 @@
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--color-brand);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.savingsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pageTitle {
+  font-family: var(--font-accent);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--text-primary);
+}
+
+.pageSubtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* Stats Panel */
+.statsCard {
+  padding: 24px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-family: var(--font-accent);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.textPrimary { color: var(--color-brand); }
+.textSuccess { color: var(--color-income); }
+.textDanger { color: var(--color-expense); }
+
+.progressBarContainer {
+  background-color: var(--border-color);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progressBar {
+  background: linear-gradient(90deg, var(--color-brand) 0%, var(--color-income) 100%);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+/* Jars Grid */
+.jarsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.jarCard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.jarCard.completed {
+  border-color: var(--color-income);
+}
+
+.jarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.jarTitleWrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.jarIcon {
+  background-color: var(--color-brand-light);
+  color: var(--color-brand);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.jarName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.jarDeadline {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.deleteBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: var(--transition-smooth);
+}
+
+.deleteBtn:hover {
+  color: var(--color-expense);
+  background-color: var(--color-expense-light);
+}
+
+/* Glass Jar Visualization */
+.jarVisualContainer {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.jarGlass {
+  width: 90px;
+  height: 120px;
+  border: 3px solid var(--text-secondary);
+  border-radius: 12px 12px 24px 24px;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  box-shadow: inset 0 8px 16px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.jarFill {
+  width: 100%;
+  background: linear-gradient(180deg, var(--color-brand) 0%, var(--color-brand-hover) 100%);
+  transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Wave Effect */
+.jarFill::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background-image: radial-gradient(circle at 50% 100%, var(--color-brand) 50%, transparent 55%);
+  background-size: 12px 8px;
+  background-repeat: repeat-x;
+}
+
+.fillPercentage {
+  font-family: var(--font-accent);
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  z-index: 2;
+}
+
+.jarDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 4px;
+}
+
+.detailLabel {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detailValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.jarActions {
+  display: flex;
+  gap: 12px;
+}
+
+.flex1 { flex: 1; }
+
+.emptyJarCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  border: 2px dashed var(--border-color);
+  box-shadow: none;
+  cursor: pointer;
+  background: none;
+}
+
+.emptyJarCard:hover {
+  border-color: var(--color-brand);
+  background-color: var(--bg-card);
+}
+
+.emptyIcon {
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Modal elements */
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  font-family: var(--font-accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.goalBanner {
+  background-color: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.bannerIcon {
+  color: var(--color-brand);
+}
+
+.bannerName {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bannerAmount {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.checkboxGroup {
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkboxDescription {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-left: 22px;
+}

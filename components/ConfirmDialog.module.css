@@ -1,0 +1,224 @@
+/* === Confirm Dialog Premium Styles === */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: overlayFadeIn 0.2s ease-out;
+  outline: none;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  animation: dialogSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Close button */
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+/* Icon circle */
+.iconCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.iconDanger {
+  background: linear-gradient(135deg, rgba(var(--color-expense-rgb), 0.12), rgba(var(--color-expense-rgb), 0.2));
+  color: var(--color-expense);
+  box-shadow: 0 0 0 6px rgba(var(--color-expense-rgb), 0.06);
+}
+
+.iconWarning {
+  background: linear-gradient(135deg, rgba(var(--color-expense-rgb), 0.12), rgba(var(--color-expense-rgb), 0.2));
+  color: var(--color-expense);
+  box-shadow: 0 0 0 6px rgba(var(--color-expense-rgb), 0.06);
+}
+
+.iconInfo {
+  background: linear-gradient(135deg, rgba(var(--color-income-rgb), 0.12), rgba(var(--color-income-rgb), 0.2));
+  color: var(--color-income);
+  box-shadow: 0 0 0 6px rgba(var(--color-income-rgb), 0.06);
+}
+
+.iconDefault {
+  background: linear-gradient(135deg, rgba(var(--color-income-rgb), 0.12), rgba(var(--color-income-rgb), 0.2));
+  color: var(--color-income);
+  box-shadow: 0 0 0 6px rgba(var(--color-income-rgb), 0.06);
+}
+
+/* Title */
+.title {
+  font-family: var(--font-accent, var(--font-primary));
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Message */
+.message {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 340px;
+  word-break: break-word;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.cancelBtn,
+.confirmBtn {
+  flex: 1;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+.cancelBtn {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.cancelBtn:hover {
+  background: var(--bg-app);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* Confirm variants */
+.confirmDanger {
+  background: linear-gradient(135deg, var(--color-expense), var(--color-expense-hover));
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(var(--color-expense-rgb), 0.3);
+}
+
+.confirmDanger:hover {
+  background: linear-gradient(135deg, var(--color-expense-hover), var(--color-expense-hover));
+  box-shadow: 0 4px 16px rgba(var(--color-expense-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+.confirmWarning {
+  background: linear-gradient(135deg, var(--color-expense), var(--color-expense-hover));
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(var(--color-expense-rgb), 0.3);
+}
+
+.confirmWarning:hover {
+  background: linear-gradient(135deg, var(--color-expense-hover), var(--color-expense-hover));
+  box-shadow: 0 4px 16px rgba(var(--color-expense-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+.confirmInfo {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-income-hover));
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(var(--color-income-rgb), 0.3);
+}
+
+.confirmInfo:hover {
+  background: linear-gradient(135deg, var(--color-income-hover), var(--color-income-hover));
+  box-shadow: 0 4px 16px rgba(var(--color-income-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+.confirmDefault {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-income-hover));
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(var(--color-income-rgb), 0.3);
+}
+
+.confirmDefault:hover {
+  background: linear-gradient(135deg, var(--color-income-hover), var(--color-income-hover));
+  box-shadow: 0 4px 16px rgba(var(--color-income-rgb), 0.4);
+  transform: translateY(-1px);
+}
+
+.confirmBtn:active {
+  transform: translateY(0);
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .dialog {
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+}

@@ -330,17 +330,30 @@ export const FinanceService = {
   
   getSettings: async (): Promise<Settings> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
       const docRef = doc(db, "users", auth.currentUser.uid, "config", "settings");
       const docSnap = await getDoc(docRef);
-      return docSnap.exists() ? (docSnap.data() as Settings) : DEFAULT_SETTINGS;
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Settings;
+        return {
+          ...data,
+          passcodePIN: data.passcodePIN ? decrypt(data.passcodePIN, key) : ""
+        };
+      }
+      return DEFAULT_SETTINGS;
     }
     return getFromStorage<Settings>("settings", DEFAULT_SETTINGS);
   },
 
   saveSettings: async (settings: Settings): Promise<Settings> => {
     if (isFirebaseEnabled() && db && auth?.currentUser) {
+      const key = getEncryptionKey();
+      const encryptedSettings = {
+        ...settings,
+        passcodePIN: settings.passcodePIN ? encrypt(settings.passcodePIN, key) : ""
+      };
       const docRef = doc(db, "users", auth.currentUser.uid, "config", "settings");
-      await setDoc(docRef, settings, { merge: true });
+      await setDoc(docRef, encryptedSettings, { merge: true });
     } else {
       saveToStorage<Settings>("settings", settings);
     }
@@ -877,7 +890,8 @@ export const FinanceService = {
           id: doc.id,
           name: decrypt(data.name, key),
           description: decrypt(data.description, key),
-          currentPrice: Number(decrypt(data.currentPrice, key))
+          currentPrice: Number(decrypt(data.currentPrice, key)),
+          yieldRate: data.yieldRate !== undefined && data.yieldRate !== null ? Number(decrypt(data.yieldRate, key)) : undefined
         } as Investment;
       });
     }
@@ -891,7 +905,8 @@ export const FinanceService = {
         ...inv,
         name: encrypt(inv.name, key),
         description: encrypt(inv.description, key),
-        currentPrice: encrypt(String(inv.currentPrice), key)
+        currentPrice: encrypt(String(inv.currentPrice), key),
+        yieldRate: inv.yieldRate !== undefined && inv.yieldRate !== null ? encrypt(String(inv.yieldRate), key) : undefined
       };
       const invRef = collection(db, "users", auth.currentUser.uid, "investments");
       if (inv.id) {

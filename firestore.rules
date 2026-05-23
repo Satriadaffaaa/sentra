@@ -234,7 +234,7 @@ service cloud.firestore {
                       && request.resource.data.baseCurrency is string
                       && request.resource.data.exchangeRates is map
                       && (!('passcodeEnabled' in request.resource.data) || request.resource.data.passcodeEnabled is bool)
-                      && (!('passcodePIN' in request.resource.data) || (request.resource.data.passcodePIN is string && (request.resource.data.passcodePIN.size() == 0 || request.resource.data.passcodePIN.size() == 4)));
+                      && (!('passcodePIN' in request.resource.data) || (request.resource.data.passcodePIN is string && (request.resource.data.passcodePIN.size() == 0 || request.resource.data.passcodePIN.size() == 4 || request.resource.data.passcodePIN.startsWith('enc_'))));
       }
 
     } // end match /users/{userId}

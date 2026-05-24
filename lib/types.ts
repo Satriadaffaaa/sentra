@@ -97,11 +97,10 @@ export interface Settings {
   baseCurrency: string;
   exchangeRates: Record<string, number>;
   notificationPermitted?: boolean;
-  autoAllocationEnabled?: boolean;
-  autoAllocationPercent?: number;
-  autoAllocationGoalId?: string;
   passcodeEnabled?: boolean;
   passcodePIN?: string;
+  autoExchangeRatesEnabled?: boolean;
+  lastExchangeRatesFetchDate?: string;
 }
 
 export interface InAppNotification {
@@ -139,7 +138,7 @@ export interface FinanceContextType {
   clearAllNotifications: () => void;
   convertCurrency: (amount: number, fromCurrency: string, toCurrency: string) => number;
   formatCurrency: (amount: number, currency?: string) => string;
-  addTransaction: (tx: Omit<Transaction, 'id'>, linkOptions?: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean }) => Promise<Transaction>;
+  addTransaction: (tx: Omit<Transaction, 'id'>, linkOptions?: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean; allocations?: { goalId: string; percent: number }[] }) => Promise<Transaction>;
   deleteTransaction: (id: string) => Promise<void>;
   saveAccount: (account: Omit<Account, 'id'> & { id?: string }) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;

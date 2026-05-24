@@ -82,6 +82,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       checkBudgetThresholds(buds, txs, cats, sets);
       // Run auto-yield simulation for fixed-income investments
       checkAutoYield(invs, invTxs);
+      // Run daily exchange rates check on load
+      checkDailyExchangeRates(sets);
     } catch (error) {
       console.error("Failed to load financial records:", error);
       pushNotification("Gagal menyinkronkan data dengan penyimpanan.", "error");
@@ -169,6 +171,50 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     }).format(amount);
   };
 
+  // Check and update exchange rates silently once a day
+  const checkDailyExchangeRates = async (currentSettings: Settings) => {
+    const today = new Date().toISOString().split("T")[0];
+    if (
+      currentSettings.autoExchangeRatesEnabled !== false &&
+      currentSettings.lastExchangeRatesFetchDate !== today
+    ) {
+      try {
+        const response = await fetch("https://open.er-api.com/v6/latest/IDR");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data && data.rates) {
+          const usdRateFromApi = data.rates.USD;
+          const sgdRateFromApi = data.rates.SGD;
+          const eurRateFromApi = data.rates.EUR;
+          
+          if (usdRateFromApi && sgdRateFromApi && eurRateFromApi) {
+            const usd = Math.round(1 / usdRateFromApi);
+            const sgd = Math.round(1 / sgdRateFromApi);
+            const eur = Math.round(1 / eurRateFromApi);
+            
+            const updatedSettings: Settings = {
+              ...currentSettings,
+              exchangeRates: {
+                ...currentSettings.exchangeRates,
+                USD: usd,
+                SGD: sgd,
+                EUR: eur,
+                IDR: 1
+              },
+              lastExchangeRatesFetchDate: today
+            };
+            
+            await FinanceService.saveSettings(updatedSettings);
+            setSettings(updatedSettings);
+            console.log("Daily exchange rates successfully updated silently.");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch daily exchange rates silently:", err);
+      }
+    }
+  };
+
   // --- Custom UX Verification Checks ---
   
   // 1. Subscription & Bill Hub Checker
@@ -252,7 +298,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   // --- CRUD Wrappers with State Updates ---
 
-  const addTransaction = async (tx: Omit<Transaction, "id">, linkOptions: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean } = {}): Promise<Transaction> => {
+  const addTransaction = async (tx: Omit<Transaction, "id">, linkOptions: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean; allocations?: { goalId: string; percent: number }[] } = {}): Promise<Transaction> => {
     const newTx = await FinanceService.addTransaction(tx as any);
     
     // Handle Savings Goal integration check
@@ -277,44 +323,43 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Handle Auto-Salary Allocation sweep logic
+    // Handle Custom Multi-Target Salary Allocation split
     if (
       tx.type === "income" &&
       tx.categoryId === "cat-salary" &&
-      linkOptions.autoAllocate &&
-      settings.autoAllocationEnabled &&
-      settings.autoAllocationPercent &&
-      settings.autoAllocationGoalId
+      linkOptions.allocations &&
+      linkOptions.allocations.length > 0
     ) {
-      const targetGoal = savingsGoals.find(g => g.id === settings.autoAllocationGoalId);
-      if (targetGoal) {
-        const allocPercent = settings.autoAllocationPercent;
-        const allocAmount = Math.round(tx.amount * (allocPercent / 100));
-        
-        if (allocAmount > 0) {
-          // Log a companion transaction: an expense moving money from the same account to the savings goal
-          const companionTx: Omit<Transaction, "id"> = {
-            amount: allocAmount,
-            type: "expense",
-            categoryId: "cat-investment", // Investasi/Tabungan
-            description: `Penyisihan Gaji Otomatis (${allocPercent}%) ke ${targetGoal.name}`,
-            date: tx.date || new Date().toISOString().split("T")[0],
-            accountId: tx.accountId,
-            linkedSavingsGoalId: targetGoal.id
-          };
-          
-          await FinanceService.addTransaction(companionTx as any);
-          
-          const newGoalAmount = targetGoal.currentAmount + allocAmount;
-          await FinanceService.saveSavingsGoal({ ...targetGoal, currentAmount: newGoalAmount });
-          
-          pushNotification(
-            `Dana otomatis dialokasikan: ${formatCurrency(allocAmount, "IDR")} disisihkan ke "${targetGoal.name}".`, 
-            "success"
-          );
+      let totalAllocatedAmount = 0;
+      for (const alloc of linkOptions.allocations) {
+        const targetGoal = savingsGoals.find(g => g.id === alloc.goalId);
+        if (targetGoal && alloc.percent > 0) {
+          const allocAmount = Math.round(tx.amount * (alloc.percent / 100));
+          if (allocAmount > 0) {
+            const companionTx: Omit<Transaction, "id"> = {
+              amount: allocAmount,
+              type: "expense",
+              categoryId: "cat-investment",
+              description: `Penyisihan Gaji Otomatis (${alloc.percent}%) ke ${targetGoal.name}`,
+              date: tx.date || new Date().toISOString().split("T")[0],
+              accountId: tx.accountId,
+              linkedSavingsGoalId: targetGoal.id
+            };
+            await FinanceService.addTransaction(companionTx as any);
+            const newGoalAmount = targetGoal.currentAmount + allocAmount;
+            await FinanceService.saveSavingsGoal({ ...targetGoal, currentAmount: newGoalAmount });
+            totalAllocatedAmount += allocAmount;
+          }
         }
       }
+      if (totalAllocatedAmount > 0) {
+        pushNotification(
+          `Dana berhasil dialokasikan: ${formatCurrency(totalAllocatedAmount, "IDR")} disisihkan ke target tabungan Anda.`, 
+          "success"
+        );
+      }
     }
+
 
     // Push local success message
     const formattedAmount = formatCurrency(tx.amount, tx.currency || "IDR");

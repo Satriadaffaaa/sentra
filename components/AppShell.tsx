@@ -8,6 +8,7 @@ import QuickAddModal from "./QuickAddModal";
 import NotificationCenter from "./NotificationCenter";
 import { useConfirm } from "./ConfirmDialog";
 import PasscodeLock from "./PasscodeLock";
+import WhatsNewModal from "./WhatsNewModal";
 import { 
   LayoutDashboard, Receipt, Wallet, PiggyBank, 
   Percent, CreditCard, Settings, Menu, X, Plus, Bell, TrendingUp, Sparkles,
@@ -29,6 +30,7 @@ export default function AppShell({ children }: AppShellProps) {
     notifications, 
     clearNotification,
     formatCurrency,
+    convertCurrency,
     accounts,
     settings,
     hideBalances,
@@ -98,12 +100,13 @@ export default function AppShell({ children }: AppShellProps) {
   }, [user, authLoading, pathname, router]);
 
   // Calculate Net Worth for sidebar
+  const baseCurr = settings.baseCurrency || "IDR";
   const totalAssets = accounts
     .filter(acc => acc.type !== "credit_card")
-    .reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    .reduce((sum, acc) => sum + convertCurrency(acc.balance || 0, acc.currency || "IDR", baseCurr), 0);
   const totalDebts = accounts
     .filter(acc => acc.type === "credit_card")
-    .reduce((sum, acc) => sum + Math.abs(acc.balance || 0), 0);
+    .reduce((sum, acc) => sum + Math.abs(convertCurrency(acc.balance || 0, acc.currency || "IDR", baseCurr)), 0);
   const netWorth = totalAssets - totalDebts;
 
   const menuItems = [
@@ -275,6 +278,9 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Notification Center */}
       {isNotificationOpen && <NotificationCenter onClose={() => setIsNotificationOpen(false)} />}
+
+      {/* What's New Release Notes Modal */}
+      <WhatsNewModal />
 
       {/* In-App Toast popups in Bottom-Right */}
       <div className={styles.toastContainer}>

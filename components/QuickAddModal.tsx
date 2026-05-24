@@ -39,6 +39,8 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
   // --- Tab 1: Smart Parsing State ---
   const [smartText, setSmartText] = useState("");
   const [parsedPreview, setParsedPreview] = useState<ParsedPreview | null>(null);
+  const [smartType, setSmartType] = useState<"auto" | "expense" | "income" | "transfer">("auto");
+
 
   // --- Autocomplete Dropdown State ---
   const [dropdownType, setDropdownType] = useState<"category" | "account" | null>(null);
@@ -63,6 +65,7 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
   const [linkedGoalId, setLinkedGoalId] = useState("");
   const [linkedDebtId, setLinkedDebtId] = useState("");
   const [shouldAutoTransact, setShouldAutoTransact] = useState(true);
+  const [customAllocations, setCustomAllocations] = useState<Record<string, number>>({});
 
   // Keypad Calculator state
   const [calcDisplay, setCalcDisplay] = useState("");
@@ -92,6 +95,17 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
     }
   }, [accounts, categories, accountId, categoryId]);
 
+  // Initialize custom allocations based on savings goals
+  useEffect(() => {
+    if (savingsGoals.length > 0) {
+      const initial: Record<string, number> = {};
+      savingsGoals.forEach(g => {
+        initial[g.id] = 0;
+      });
+      setCustomAllocations(initial);
+    }
+  }, [savingsGoals]);
+
   // --- Smart Parsing Engine (NLP Simulation) ---
   useEffect(() => {
     if (activeTab !== "smart" || !smartText.trim()) {
@@ -100,7 +114,6 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
     }
 
     const text = smartText.trim();
-    const words = text.split(/\s+/);
     
     const parsed: ParsedPreview = {
       type: "expense",
@@ -113,33 +126,99 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
       error: null
     };
 
-    // 1. Detect Transfers
-    const isTransfer = text.toLowerCase().includes("transfer") || text.toLowerCase().includes("kirim");
-    if (isTransfer) {
-      parsed.type = "transfer";
-    } else if (text.toLowerCase().includes("gaji") || text.toLowerCase().includes("bonus") || text.toLowerCase().includes("income") || text.toLowerCase().includes("+")) {
-      parsed.type = "income";
+    // 1. Determine Transaction Type
+    if (smartType !== "auto") {
+      parsed.type = smartType;
+    } else {
+      const lowerText = text.toLowerCase();
+      const isTransfer = lowerText.includes("transfer") || lowerText.includes("kirim") || lowerText.includes("pindah") || lowerText.includes("mutasi");
+      const isIncome = lowerText.includes("gaji") || lowerText.includes("bonus") || lowerText.includes("income") || lowerText.includes("+") || lowerText.includes("pemasukan");
+      
+      if (isTransfer) {
+        parsed.type = "transfer";
+      } else if (isIncome) {
+        parsed.type = "income";
+      } else {
+        parsed.type = "expense";
+      }
     }
 
     // Helper: Parse numerical abbreviations (50k, 1.5m, 2jt, etc.)
     const parseAmount = (str: string) => {
-      const cleaned = str.replace(/[^0-9.,kmjt]/gi, "").replace(",", ".");
+      let cleaned = str.replace(/rp\.?/i, "").replace(/\$/g, "").trim().toLowerCase();
       if (!cleaned) return 0;
-
-      let num = parseFloat(cleaned);
-      if (isNaN(num)) return 0;
-
-      if (/k/i.test(cleaned)) num *= 1000;
-      else if (/m/i.test(cleaned) || /jt/i.test(cleaned)) num *= 1000000;
       
-      return Math.round(num);
+      let multiplier = 1;
+      if (cleaned.endsWith("k")) {
+        multiplier = 1000;
+        cleaned = cleaned.slice(0, -1);
+      } else if (cleaned.endsWith("jt") || cleaned.endsWith("m") || cleaned.endsWith("juta")) {
+        multiplier = 1000000;
+        if (cleaned.endsWith("juta")) cleaned = cleaned.slice(0, -4);
+        else cleaned = cleaned.slice(0, -2);
+      }
+      
+      if (multiplier === 1) {
+        cleaned = cleaned.replace(/[.,]/g, "");
+      } else {
+        cleaned = cleaned.replace(",", ".");
+      }
+      
+      const num = parseFloat(cleaned);
+      if (isNaN(num)) return 0;
+      return Math.round(num * multiplier);
     };
 
-    // Find Amount and Filter Meta Tags
-    let amountFound = false;
-    const descWords: string[] = [];
-    let categoryTagged = false;
+    // 2. Define Category and Account Aliases (Indonesian Friendly)
+    const categoryAliases: Record<string, string[]> = {
+      "cat-food": ["makan", "minum", "kopi", "food", "kuliner", "resto", "restoran", "cafe", "warung", "bakso", "mie", "nasi", "sarapan", "snack", "camilan", "starbucks", "indomaret", "alfamart", "jajan", "cemilan", "susu", "kulineran", "kopi pagi", "kopi susu"],
+      "cat-transport": ["transport", "transportasi", "bensin", "ojek", "gojek", "grab", "taksi", "taxi", "mrt", "busway", "krl", "parkir", "toll", "tol", "go-car", "grabcar", "go-ride", "grabride", "lrt", "commuter", "fuel", "pertalite", "pertamax"],
+      "cat-shopping": ["belanja", "shopping", "baju", "celana", "sepatu", "tokopedia", "shopee", "lazada", "mall", "supermarket", "beli", "toko", "olshop", "minimarket", "pasar"],
+      "cat-salary": ["gaji", "income", "pendapatan", "salary", "upah", "honor", "bonus", "sampingan", "payday", "payroll", "proyek", "fee", "omset", "omzet"],
+      "cat-bills": ["tagihan", "listrik", "pln", "air", "pdam", "wifi", "internet", "indihome", "pulsa", "kuota", "langganan", "kos", "kontrakan", "token", "bpjs", "asuransi"],
+      "cat-entertainment": ["hiburan", "entertainment", "nonton", "bioskop", "netflix", "spotify", "game", "steam", "topup", "karaoke", "traveling", "jalan-jalan", "cinema", "xxi", "rekreasi", "liburan", "healing"],
+      "cat-investment": ["investasi", "investment", "saham", "reksadana", "reksa dana", "crypto", "emas", "deposito", "bond", "obligasi", "p2p", "bibit", "bareksa", "pluang", "dividen", "bunga", "yield"],
+      "cat-others": ["lain", "others", "nyasar", "lain-lain"]
+    };
 
+    const accountAliases: Record<string, string[]> = {
+      "acc-1": ["tunai", "cash", "dompet", "kantong", "pegangan"],
+      "acc-2": ["bca", "bank bca", "bca bank"],
+      "acc-3": ["gopay", "go-pay", "gopi", "go pay"],
+      "acc-4": ["mandiri", "usd", "mandiri usd"],
+      "acc-5": ["kartu kredit", "cc", "credit card", "kk", "limit", "utang kk"]
+    };
+
+    const getCategoryAliases = (cat: Category): string[] => {
+      const staticAliases = categoryAliases[cat.id] || [];
+      const dynamicAliases = [cat.name.toLowerCase()];
+      cat.name.toLowerCase().split(/[^a-z0-9]/).forEach(word => {
+        if (word.length > 2) dynamicAliases.push(word);
+      });
+      return Array.from(new Set([...staticAliases, ...dynamicAliases])).sort((a, b) => b.length - a.length);
+    };
+
+    const getAccountAliases = (acc: Account): string[] => {
+      const staticAliases = accountAliases[acc.id] || [];
+      const dynamicAliases = [acc.name.toLowerCase()];
+      acc.name.toLowerCase().split(/[^a-z0-9]/).forEach(word => {
+        if (word.length > 2) dynamicAliases.push(word);
+      });
+      return Array.from(new Set([...staticAliases, ...dynamicAliases])).sort((a, b) => b.length - a.length);
+    };
+
+    // 3. Tokenize Words and Identify Explicit Tags
+    const words = text.split(/\s+/);
+    let categoryTagged = false;
+    let accountTagged = false;
+    let fromAccountTagged = false;
+    let toAccountTagged = false;
+    let amountFound = false;
+
+    // We will collect words that form the description
+    const descWords: string[] = [];
+
+    // Explicit Tag Extraction Loop
     words.forEach(word => {
       if (word.startsWith("#")) {
         const catSlug = word.slice(1).toLowerCase();
@@ -160,43 +239,192 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
         );
         if (foundAcc) {
           if (parsed.type === "transfer") {
-            if (!parsed.fromAccount) parsed.fromAccount = foundAcc;
-            else if (!parsed.toAccount) parsed.toAccount = foundAcc;
+            if (!parsed.fromAccount) {
+              parsed.fromAccount = foundAcc;
+              fromAccountTagged = true;
+            } else if (!parsed.toAccount) {
+              parsed.toAccount = foundAcc;
+              toAccountTagged = true;
+            }
           } else {
             parsed.account = foundAcc;
+            accountTagged = true;
           }
         }
-      } 
-      else if (/[0-9]/.test(word) && !amountFound && !word.startsWith("#") && !word.startsWith("@")) {
+      }
+      else if (/[0-9]/.test(word) && !amountFound) {
+        // Parse numerical amount
         parsed.amount = parseAmount(word);
         if (parsed.amount > 0) amountFound = true;
-      } 
-      else if (word.toLowerCase() !== "transfer" && word.toLowerCase() !== "kirim" && word.toLowerCase() !== "ke" && word.toLowerCase() !== "to") {
+      }
+      else {
+        // Keep in description for now
         descWords.push(word);
       }
     });
 
-    parsed.description = descWords.join(" ") || (parsed.type === "transfer" ? "Transfer Saldo" : "Transaksi Baru");
+    // 4. Natural NLP / Preposition Parsing on Remaining Words
+    // We clean the text for matching
+    const remainingText = descWords.join(" ");
+    const normalizedText = " " + remainingText.toLowerCase().replace(/[^a-z0-9\s]/gi, " ").replace(/\s+/g, " ").trim() + " ";
 
-    // History-based auto-categorization check (if category not explicitly tagged)
-    if (!categoryTagged && parsed.type !== "transfer" && parsed.description) {
-      const normalizedDesc = parsed.description.toLowerCase().trim();
-      if (normalizedDesc) {
-        // Find most recent matching transaction from general history
-        const pastTx = transactions.find(t => 
-          t.description && 
-          t.description.toLowerCase().includes(normalizedDesc) && 
-          t.categoryId
-        );
-        if (pastTx) {
-          const matchedCat = categories.find(c => c.id === pastTx.categoryId);
-          if (matchedCat) {
-            parsed.category = matchedCat;
+    // Helper functions for checking word boundary matches
+    const hasWordBoundary = (fullText: string, word: string) => {
+      const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, 'i').test(fullText);
+    };
+
+    const findPrepTarget = (fullText: string, prep: string, aliases: string[]): string | null => {
+      for (const alias of aliases) {
+        const escapedPrep = prep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedPrep}\\s+${escapedAlias}\\b`, 'i');
+        if (regex.test(fullText)) {
+          return alias;
+        }
+      }
+      return null;
+    };
+
+    // Preposition matching for Accounts (if not explicitly tagged with @)
+    if (parsed.type === "transfer") {
+      // 1. From account
+      if (!fromAccountTagged) {
+        for (const acc of accounts) {
+          const aliases = getAccountAliases(acc);
+          const matchedAlias = findPrepTarget(normalizedText, "dari", aliases);
+          if (matchedAlias) {
+            parsed.fromAccount = acc;
+            fromAccountTagged = true;
+            break;
+          }
+        }
+      }
+      // 2. To account
+      if (!toAccountTagged) {
+        for (const acc of accounts) {
+          const aliases = getAccountAliases(acc);
+          const matchedAlias = findPrepTarget(normalizedText, "ke", aliases);
+          if (matchedAlias) {
+            parsed.toAccount = acc;
+            toAccountTagged = true;
+            break;
+          }
+        }
+      }
+    } else {
+      // Single Account (for income/expense)
+      if (!accountTagged) {
+        // Look for: pakai/dengan/menggunakan/via/dari
+        const preps = ["pakai", "dengan", "menggunakan", "via", "dari", "ke"];
+        let found = false;
+        for (const prep of preps) {
+          for (const acc of accounts) {
+            const aliases = getAccountAliases(acc);
+            const matchedAlias = findPrepTarget(normalizedText, prep, aliases);
+            if (matchedAlias) {
+              parsed.account = acc;
+              accountTagged = true;
+              found = true;
+              break;
+            }
+          }
+          if (found) break;
+        }
+      }
+    }
+
+    // Preposition matching for Categories (if not explicitly tagged with #)
+    if (parsed.type !== "transfer" && !categoryTagged) {
+      const preps = ["untuk", "kategori", "buat"];
+      let found = false;
+      for (const prep of preps) {
+        for (const cat of categories) {
+          const aliases = getCategoryAliases(cat);
+          const matchedAlias = findPrepTarget(normalizedText, prep, aliases);
+          if (matchedAlias) {
+            parsed.category = cat;
+            categoryTagged = true;
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+    }
+
+    // 5. Fallback General Scanning (Implicit detection without prepositions)
+    if (parsed.type === "transfer") {
+      // Find any unmatched accounts
+      accounts.forEach(acc => {
+        const aliases = getAccountAliases(acc);
+        const hasAlias = aliases.some(alias => hasWordBoundary(normalizedText, alias));
+        if (hasAlias) {
+          if (!parsed.fromAccount) {
+            parsed.fromAccount = acc;
+          } else if (!parsed.toAccount && parsed.fromAccount.id !== acc.id) {
+            parsed.toAccount = acc;
+          }
+        }
+      });
+    } else {
+      // For expense/income, check account
+      if (!parsed.account) {
+        for (const acc of accounts) {
+          const aliases = getAccountAliases(acc);
+          const hasAlias = aliases.some(alias => hasWordBoundary(normalizedText, alias));
+          if (hasAlias) {
+            parsed.account = acc;
+            break;
+          }
+        }
+      }
+      // Check category
+      if (!parsed.category) {
+        for (const cat of categories) {
+          const aliases = getCategoryAliases(cat);
+          const hasAlias = aliases.some(alias => hasWordBoundary(normalizedText, alias));
+          if (hasAlias) {
+            parsed.category = cat;
+            break;
           }
         }
       }
     }
 
+    // 6. Clean Description Text (Strip connector words, matched accounts, amount, and category prep triggers)
+    let cleanedDesc = remainingText;
+
+    const connectorsToStrip = [
+      "dari", "ke", "pakai", "menggunakan", "dengan", "via", "untuk", "kategori", "buat",
+      "transfer", "kirim", "pindah", "mutasi", "gaji", "bonus", "income", "pemasukan", "rp", "rupiah"
+    ];
+
+    const finalDescWords = cleanedDesc.split(/\s+/).filter(word => {
+      const lowerWord = word.toLowerCase().replace(/[^a-z0-9]/g, "");
+      
+      if (connectorsToStrip.includes(lowerWord)) return false;
+
+      let isAccountWord = false;
+      const matchedAccounts = parsed.type === "transfer" 
+        ? [parsed.fromAccount, parsed.toAccount]
+        : [parsed.account];
+        
+      matchedAccounts.forEach(acc => {
+        if (!acc) return;
+        const aliases = getAccountAliases(acc);
+        if (aliases.some(alias => alias.split(/\s+/).includes(lowerWord) || lowerWord === acc.name.toLowerCase().replace(/[^a-z0-9]/g, ""))) {
+          isAccountWord = true;
+        }
+      });
+      if (isAccountWord) return false;
+
+      return true;
+    });
+
+    parsed.description = finalDescWords.join(" ").trim() || (parsed.type === "transfer" ? "Transfer Saldo" : "Transaksi Baru");
+
+    // 7. Fallback Defaults
     if (!parsed.category && parsed.type !== "transfer") {
       parsed.category = categories.find(c => c.type === parsed.type) || categories[0];
     }
@@ -209,12 +437,19 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
     }
 
     setParsedPreview(parsed);
-  }, [smartText, categories, accounts, transactions, activeTab]);
+  }, [smartText, categories, accounts, transactions, activeTab, smartType]);
 
   // Handle Smart Submit
   const handleSmartSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!parsedPreview || parsedPreview.amount <= 0) return;
+
+    const allocations = Object.entries(customAllocations)
+      .filter(([_, pct]) => pct > 0)
+      .map(([goalId, percent]) => ({ goalId, percent }));
+
+    const totalPercent = allocations.reduce((sum, a) => sum + a.percent, 0);
+    if (totalPercent > 100) return; // Prevent submitting invalid allocation
 
     const tx: Omit<Transaction, "id"> = {
       amount: parsedPreview.amount,
@@ -228,7 +463,10 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
       ...(parsedPreview.type === "transfer" ? { toAccountId: parsedPreview.toAccount?.id || "" } : {})
     };
 
-    await addTransaction(tx, { autoAllocate: applySalaryAllocation });
+    await addTransaction(tx, { 
+      allocations: parsedPreview.type === "income" && parsedPreview.category?.id === "cat-salary" ? allocations : undefined,
+      autoAllocate: false
+    });
     onClose();
   };
 
@@ -285,7 +523,7 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
       ...(txType === "transfer" ? { toAccountId } : {})
     };
 
-    const linkOptions: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean } = {};
+    const linkOptions: { savingsGoalId?: string; debtId?: string; autoAllocate?: boolean; allocations?: { goalId: string; percent: number }[] } = {};
 
     if (txType !== "transfer") {
       if (linkTarget === "savings" && linkedGoalId) {
@@ -295,7 +533,15 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
       }
       
       if (txType === "income" && categoryId === "cat-salary") {
-        linkOptions.autoAllocate = applySalaryAllocation;
+        const allocations = Object.entries(customAllocations)
+          .filter(([_, pct]) => pct > 0)
+          .map(([goalId, percent]) => ({ goalId, percent }));
+        
+        const totalPercent = allocations.reduce((sum, a) => sum + a.percent, 0);
+        if (totalPercent > 100) return; // Prevent submitting invalid allocation
+        
+        linkOptions.allocations = allocations;
+        linkOptions.autoAllocate = false;
       }
     }
 
@@ -422,51 +668,115 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
   };
 
   const handleChipClick = (type: "category" | "account", name: string) => {
-    const cleanName = name.replace(/\s+/g, "");
-    const tag = type === "category" ? "#" : "@";
-    const token = `${tag}${cleanName}`;
+    const cleanName = name.replace(/\s+/g, "").toLowerCase();
     
     setSmartText(prev => {
       const trimmed = prev.trim();
-      if (!trimmed) return token + " ";
-      return `${trimmed} ${token} `;
+      const currentType = smartType !== "auto" ? smartType : (parsedPreview?.type || "expense");
+      
+      if (!trimmed) {
+        if (type === "category") {
+          const defaultAcc = accounts[0] ? accounts[0].name.toLowerCase().replace(/\s+/g, "") : "cash";
+          return `50k [deskripsi] #${cleanName} @${defaultAcc} `;
+        } else {
+          if (currentType === "transfer") {
+            return `500k transfer dari @${cleanName} ke @`;
+          } else {
+            return `50k [deskripsi] @${cleanName} `;
+          }
+        }
+      }
+      
+      if (type === "category") {
+        if (/#\S+/.test(trimmed)) {
+          return trimmed.replace(/#\S+/, `#${cleanName}`) + " ";
+        }
+        return `${trimmed} #${cleanName} `;
+      } else {
+        if (currentType === "transfer") {
+          const matches = [...trimmed.matchAll(/@\S+/g)];
+          if (matches.length >= 2) {
+            const secondMatch = matches[1];
+            const start = secondMatch.index!;
+            const end = start + secondMatch[0].length;
+            return trimmed.substring(0, start) + `@${cleanName}` + trimmed.substring(end) + " ";
+          }
+          
+          const hasFromAccount = trimmed.includes("@") || trimmed.toLowerCase().includes("dari");
+          if (hasFromAccount) {
+            const hasToPreposition = trimmed.toLowerCase().endsWith("ke");
+            if (hasToPreposition) {
+              return `${trimmed} @${cleanName} `;
+            }
+            return `${trimmed} ke @${cleanName} `;
+          }
+          return `${trimmed} dari @${cleanName} `;
+        } else {
+          if (/@\S+/.test(trimmed)) {
+            return trimmed.replace(/@\S+/, `@${cleanName}`) + " ";
+          }
+          return `${trimmed} @${cleanName} `;
+        }
+      }
     });
     
-    if (smartInputRef.current) {
-      smartInputRef.current.focus();
-    }
+    setTimeout(() => {
+      if (smartInputRef.current) {
+        smartInputRef.current.focus();
+        const value = smartInputRef.current.value;
+        const descIndex = value.indexOf("[deskripsi]");
+        if (descIndex !== -1) {
+          smartInputRef.current.setSelectionRange(descIndex, descIndex + "[deskripsi]".length);
+        } else {
+          smartInputRef.current.setSelectionRange(value.length, value.length);
+        }
+      }
+    }, 50);
   };
 
   // Generate suggestions based on available accounts & categories
   const getSuggestions = () => {
     const list = [];
-    
-    // Suggestion 1: Expense
-    const firstExpCat = categories.find(c => c.type === "expense");
     const firstAcc = accounts[0];
-    const expCatSlug = firstExpCat ? firstExpCat.name.split(" ")[0].toLowerCase() : "food";
-    const accSlug = firstAcc ? firstAcc.name.toLowerCase() : "cash";
-    list.push({
-      text: `50k makan siang #${expCatSlug} @${accSlug}`,
-      desc: `Catat pengeluaran makanan menggunakan ${firstAcc?.name || "dompet Cash"}`
-    });
+    const secondAcc = accounts[1] || accounts[0];
+    
+    const accSlug = firstAcc ? firstAcc.name.toLowerCase().split(/[^\w]/)[0] : "cash";
+    const toAccSlug = secondAcc ? secondAcc.name.toLowerCase().split(/[^\w]/)[0] : "bca";
 
-    // Suggestion 2: Income
-    const firstIncCat = categories.find(c => c.type === "income");
-    const incCatSlug = firstIncCat ? firstIncCat.name.split(" ")[0].toLowerCase() : "salary";
-    list.push({
-      text: `15m gaji bulanan #${incCatSlug} @${accSlug}`,
-      desc: `Catat pemasukan gaji ke ${firstAcc?.name || "rekening utama"}`
-    });
-
-    // Suggestion 3: Transfer
-    const secondAcc = accounts[1];
-    if (secondAcc && firstAcc) {
-      const fromSlug = firstAcc.name.toLowerCase();
-      const toSlug = secondAcc.name.toLowerCase();
+    if (smartType === "auto" || smartType === "expense") {
+      const firstExpCat = categories.find(c => c.type === "expense");
+      const expCatSlug = firstExpCat ? firstExpCat.name.toLowerCase().split(/[^\w]/)[0] : "food";
       list.push({
-        text: `500k transfer @${fromSlug} @${toSlug}`,
-        desc: `Transfer dana dari ${firstAcc.name} ke ${secondAcc.name}`
+        text: `50k makan bakso pakai ${accSlug}`,
+        desc: `Pengeluaran alami: Rp 50.000 kategori Makanan dari dompet ${firstAcc?.name || "Cash"}`
+      });
+      list.push({
+        text: `150k bayar wifi #${expCatSlug} @${accSlug}`,
+        desc: `Gunakan simbol manual: Rp 150.000 dengan kategori dan rekening manual`
+      });
+    }
+
+    if (smartType === "auto" || smartType === "income") {
+      const firstIncCat = categories.find(c => c.type === "income");
+      const incCatSlug = firstIncCat ? firstIncCat.name.toLowerCase().split(/[^\w]/)[0] : "salary";
+      list.push({
+        text: `10jt gaji bulanan ke ${accSlug}`,
+        desc: `Pemasukan alami: Rp 10.000.000 masuk ke ${firstAcc?.name || "rekening"}`
+      });
+      list.push({
+        text: `1.5jt bonus proyek #${incCatSlug} @${accSlug}`,
+        desc: `Gunakan simbol manual: Rp 1.500.000 kategori Gaji ke ${firstAcc?.name || "rekening"}`
+      });
+    }
+
+    if (smartType === "auto" || smartType === "transfer") {
+      list.push({
+        text: `500k transfer dari ${accSlug} ke ${toAccSlug}`,
+        desc: `Transfer alami: Kirim Rp 500.000 dari ${firstAcc?.name || "BCA"} ke ${secondAcc?.name || "GoPay"}`
+      });
+      list.push({
+        text: `200k @${accSlug} @${toAccSlug}`,
+        desc: `Gunakan simbol manual: Kirim Rp 200.000 dari ${firstAcc?.name || "BCA"} ke ${secondAcc?.name || "GoPay"}`
       });
     }
 
@@ -474,6 +784,31 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
   };
 
   const suggestions = getSuggestions();
+
+  // Get categories sorted by transaction frequency, excluding investments
+  const getSortedHelperCategories = () => {
+    const counts: Record<string, number> = {};
+    transactions.forEach(t => {
+      if (t.categoryId) {
+        counts[t.categoryId] = (counts[t.categoryId] || 0) + 1;
+      }
+    });
+    return [...categories]
+      .filter(c => c.id !== "cat-investment")
+      .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+  };
+
+  // Get active cash accounts, excluding investment accounts
+  const getSortedHelperAccounts = () => {
+    return accounts.filter(a => a.type !== "investment");
+  };
+
+  const handleRedirectToInvestments = () => {
+    onClose();
+    window.location.href = "/investments";
+  };
+
+  const totalPercent = Object.values(customAllocations).reduce((sum, v) => sum + v, 0);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -507,12 +842,54 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
         {/* Tab 1: Smart Parsing */}
         {activeTab === "smart" && (
           <form onSubmit={handleSmartSubmit} className={styles.tabPane}>
+            
+            {/* Forced-Type Toggle */}
+            <div className={styles.smartTypeSelector}>
+              <button 
+                type="button" 
+                className={`${styles.smartTypeBtn} ${smartType === "auto" ? styles.activeAuto : ""}`}
+                onClick={() => setSmartType("auto")}
+              >
+                <Sparkles size={13} />
+                Auto-Deteksi
+              </button>
+              <button 
+                type="button" 
+                className={`${styles.smartTypeBtn} ${smartType === "expense" ? styles.activeExpense : ""}`}
+                onClick={() => setSmartType("expense")}
+              >
+                🔴 Pengeluaran
+              </button>
+              <button 
+                type="button" 
+                className={`${styles.smartTypeBtn} ${smartType === "income" ? styles.activeIncome : ""}`}
+                onClick={() => setSmartType("income")}
+              >
+                🟢 Pemasukan
+              </button>
+              <button 
+                type="button" 
+                className={`${styles.smartTypeBtn} ${smartType === "transfer" ? styles.activeTransfer : ""}`}
+                onClick={() => setSmartType("transfer")}
+              >
+                🔵 Transfer
+              </button>
+            </div>
+
             <div className={styles.smartInputContainer} style={{ position: "relative" }}>
               <input
                 ref={smartInputRef}
                 type="text"
                 className={styles.smartTextInput}
-                placeholder="Contoh: 45k kopi starbucks #food @cash"
+                placeholder={
+                  smartType === "expense" 
+                    ? "Contoh: 45k makan bakso pakai gopay atau #food @gopay" 
+                    : smartType === "income" 
+                    ? "Contoh: 10jt gaji bulanan ke bca atau #salary @bca" 
+                    : smartType === "transfer" 
+                    ? "Contoh: 500k dari bca ke gopay atau @bca @gopay" 
+                    : "Contoh: 45k kopi starbucks #food @cash atau pakai bahasa alami"
+                }
                 value={smartText}
                 onChange={handleSmartTextChange}
                 onClick={handleSmartInputClickOrKeyUp}
@@ -521,8 +898,77 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
                 autoComplete="off"
               />
               <span className={styles.smartHint}>
-                Ketik jumlah, lalu tambahkan <strong>#kategori</strong> dan <strong>@dompet</strong>. Gunakan <strong>k</strong> (ribu) atau <strong>m</strong> (juta).
+                {smartType === "transfer" ? (
+                  <>
+                    Ketik nominal dan nama rekening. Sistem otomatis mendeteksi arah transfer (misal: <strong>dari bca ke gopay</strong>).
+                  </>
+                ) : (
+                  <>
+                    Ketik nominal, lalu tambahkan <strong>kategori</strong> dan <strong>rekening</strong> secara alami atau menggunakan simbol <strong>#</strong> dan <strong>@</strong>.
+                  </>
+                )}
               </span>
+
+              {/* Visual Parser Board (Live Tagging) */}
+              {parsedPreview && (
+                <div className={styles.parserTagBoard}>
+                  <div className={styles.parserBoardLabel}>
+                    <Sparkles size={12} style={{ color: "var(--color-brand)" }} />
+                    Hasil Deteksi Sistem (Real-time):
+                  </div>
+                  
+                  {/* Tag 1: Tipe */}
+                  <span className={`${styles.parserTag} ${styles[parsedPreview.type]}`}>
+                    Tipe: {parsedPreview.type === "expense" ? "🔴 Pengeluaran" : parsedPreview.type === "income" ? "🟢 Pemasukan" : "🔵 Transfer"}
+                  </span>
+                  
+                  {/* Tag 2: Nominal */}
+                  <span className={`${styles.parserTag} ${styles.amount} ${parsedPreview.amount > 0 ? styles.hasValue : styles.missing}`}>
+                    Nominal: {parsedPreview.amount > 0 ? formatCurrency(parsedPreview.amount, "IDR") : "❓ Rp 0"}
+                  </span>
+                  
+                  {/* Tag 3: Kategori atau Detail Transfer */}
+                  {parsedPreview.type !== "transfer" ? (
+                    <span className={`${styles.parserTag} ${styles.category} ${parsedPreview.category ? styles.hasValue : styles.missing}`}>
+                      Kategori: {parsedPreview.category ? `${parsedPreview.category.icon} ${parsedPreview.category.name}` : "❓ Pilih Kategori"}
+                    </span>
+                  ) : null}
+                  
+                  {/* Tag 4: Akun / Rekening */}
+                  {parsedPreview.type === "transfer" ? (
+                    <>
+                      <span className={`${styles.parserTag} ${styles.account} ${parsedPreview.fromAccount ? styles.hasValue : styles.missing}`}>
+                        Dari: {parsedPreview.fromAccount ? `${parsedPreview.fromAccount.icon} ${parsedPreview.fromAccount.name}` : "❓ Rekening Asal"}
+                      </span>
+                      <span className={`${styles.parserTag} ${styles.account} ${parsedPreview.toAccount ? styles.hasValue : styles.missing}`}>
+                        Ke: {parsedPreview.toAccount ? `${parsedPreview.toAccount.icon} ${parsedPreview.toAccount.name}` : "❓ Rekening Tujuan"}
+                      </span>
+                    </>
+                  ) : (
+                    <span className={`${styles.parserTag} ${styles.account} ${parsedPreview.account ? styles.hasValue : styles.missing}`}>
+                      Dompet: {parsedPreview.account ? `${parsedPreview.account.icon} ${parsedPreview.account.name}` : "❓ Rekening"}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Smart Redirect Banner for Investments */}
+              {(smartText.toLowerCase().includes("investasi") || 
+                parsedPreview?.category?.id === "cat-investment") && (
+                <div className={styles.redirectBanner}>
+                  <span>
+                    💡 Transaksi investasi sebaiknya dicatat langsung di halaman portofolio untuk mendukung pencatatan unit asset & yield engine.
+                  </span>
+                  <button 
+                    type="button" 
+                    className={styles.redirectLink}
+                    onClick={handleRedirectToInvestments}
+                  >
+                    Buka Portofolio &rarr;
+                  </button>
+                </div>
+              )}
+
 
               {/* Floating Autocomplete Dropdown */}
               {dropdownType && filteredItems.length > 0 && (
@@ -543,9 +989,9 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
 
             {/* Quick Helper Chips */}
             <div className={styles.quickChipsSection}>
-              <span className={styles.chipsLabel}>Kategori Cepat:</span>
+              <span className={styles.chipsLabel}>Kategori Cepat (Terpopuler):</span>
               <div className={styles.quickChipsScroll}>
-                {categories.map(c => (
+                {getSortedHelperCategories().map(c => (
                   <button
                     key={c.id}
                     type="button"
@@ -559,7 +1005,7 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
               
               <span className={styles.chipsLabel} style={{ marginTop: "6px" }}>Rekening Cepat:</span>
               <div className={styles.quickChipsScroll}>
-                {accounts.map(a => (
+                {getSortedHelperAccounts().map(a => (
                   <button
                     key={a.id}
                     type="button"
@@ -648,24 +1094,80 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
 
                 {parsedPreview.type === "income" && 
                  parsedPreview.category?.id === "cat-salary" && 
-                 settings.autoAllocationEnabled && 
-                 settings.autoAllocationGoalId && (
-                  <div className={styles.allocationNotice}>
-                    <input
-                      type="checkbox"
-                      id="applyAllocationSmart"
-                      checked={applySalaryAllocation}
-                      onChange={(e) => setApplySalaryAllocation(e.target.checked)}
-                      style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                    />
-                    <label htmlFor="applyAllocationSmart" style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>
-                      Alokasikan {settings.autoAllocationPercent}% ({formatCurrency(Math.round(parsedPreview.amount * (settings.autoAllocationPercent || 10) / 100))}) ke target <strong>{savingsGoals.find(g => g.id === settings.autoAllocationGoalId)?.name}</strong>
-                    </label>
+                 savingsGoals.length > 0 && (
+                  <div className={styles.multiAllocContainer}>
+                    <div className={styles.multiAllocHeader}>
+                      <span>Alokasi Gaji ke Tabungan Target (Multi-Split):</span>
+                      <span className={styles.totalAllocBadge} style={{ color: totalPercent > 100 ? "var(--color-expense)" : "var(--color-income)", fontWeight: "bold" }}>
+                        Total: {totalPercent}% / 100%
+                      </span>
+                    </div>
+                    <div className={styles.multiAllocList}>
+                      {savingsGoals.map(goal => {
+                        const percent = customAllocations[goal.id] || 0;
+                        const isChecked = percent > 0;
+                        const allocatedAmt = Math.round(parsedPreview.amount * (percent / 100));
+                        return (
+                          <div key={goal.id} className={styles.multiAllocRow}>
+                            <label className={styles.multiAllocLabel}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  setCustomAllocations(prev => ({
+                                    ...prev,
+                                    [goal.id]: e.target.checked ? 10 : 0
+                                  }));
+                                }}
+                                style={{ cursor: "pointer" }}
+                              />
+                              <span className={styles.goalInfo}>
+                                <strong>{"🎯"} {goal.name}</strong>
+                                <small style={{ fontSize: "10px", color: "var(--text-muted)" }}>Terisi: {formatCurrency(goal.currentAmount)}</small>
+                              </span>
+                            </label>
+                            <div className={styles.percentInputWrap}>
+                              {isChecked && (
+                                <>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    className={styles.percentField}
+                                    value={percent}
+                                    onChange={(e) => {
+                                      const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                      setCustomAllocations(prev => ({
+                                        ...prev,
+                                        [goal.id]: val
+                                      }));
+                                    }}
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                    style={{ width: "50px", textAlign: "center", border: "1px solid var(--border-color)", borderRadius: "4px" }}
+                                  />
+                                  <span style={{ fontSize: "12px", fontWeight: "bold" }}>%</span>
+                                  {allocatedAmt > 0 && (
+                                    <span className={styles.allocValue} style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                                      ({formatCurrency(allocatedAmt)})
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalPercent > 100 && (
+                      <div className={styles.allocError} style={{ color: "var(--color-expense)", fontSize: "11px", fontWeight: "600", marginTop: "6px" }}>
+                        ⚠️ Total persentase alokasi melebihi 100%!
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {parsedPreview.amount > 0 ? (
-                  <button type="submit" className={`btn btn-primary ${styles.submitBtn}`}>
+                  <button type="submit" className={`btn btn-primary ${styles.submitBtn}`} disabled={totalPercent > 100}>
                     <Check size={18} /> Simpan Transaksi
                   </button>
                 ) : (
@@ -931,23 +1433,79 @@ export default function QuickAddModal({ onClose }: QuickAddModalProps) {
 
               {txType === "income" && 
                categoryId === "cat-salary" && 
-               settings.autoAllocationEnabled && 
-               settings.autoAllocationGoalId && (
-                <div className={styles.allocationNotice}>
-                  <input
-                    type="checkbox"
-                    id="applyAllocationVisual"
-                    checked={applySalaryAllocation}
-                    onChange={(e) => setApplySalaryAllocation(e.target.checked)}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                  />
-                  <label htmlFor="applyAllocationVisual" style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>
-                    Alokasikan {settings.autoAllocationPercent}% ({formatCurrency(Math.round((Number(amountStr) || 0) * (settings.autoAllocationPercent || 10) / 100))}) ke target <strong>{savingsGoals.find(g => g.id === settings.autoAllocationGoalId)?.name}</strong>
-                  </label>
+               savingsGoals.length > 0 && (
+                <div className={styles.multiAllocContainer}>
+                  <div className={styles.multiAllocHeader}>
+                    <span>Alokasi Gaji ke Tabungan Target (Multi-Split):</span>
+                    <span className={styles.totalAllocBadge} style={{ color: totalPercent > 100 ? "var(--color-expense)" : "var(--color-income)", fontWeight: "bold" }}>
+                      Total: {totalPercent}% / 100%
+                    </span>
+                  </div>
+                  <div className={styles.multiAllocList}>
+                    {savingsGoals.map(goal => {
+                      const percent = customAllocations[goal.id] || 0;
+                      const isChecked = percent > 0;
+                      const allocatedAmt = Math.round((Number(amountStr) || 0) * (percent / 100));
+                      return (
+                        <div key={goal.id} className={styles.multiAllocRow}>
+                          <label className={styles.multiAllocLabel}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                 setCustomAllocations(prev => ({
+                                   ...prev,
+                                   [goal.id]: e.target.checked ? 10 : 0
+                                 }));
+                              }}
+                              style={{ cursor: "pointer" }}
+                            />
+                            <span className={styles.goalInfo}>
+                              <strong>{"🎯"} {goal.name}</strong>
+                              <small style={{ fontSize: "10px", color: "var(--text-muted)" }}>Terisi: {formatCurrency(goal.currentAmount)}</small>
+                            </span>
+                          </label>
+                          <div className={styles.percentInputWrap}>
+                            {isChecked && (
+                              <>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  className={styles.percentField}
+                                  value={percent}
+                                  onChange={(e) => {
+                                    const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                    setCustomAllocations(prev => ({
+                                      ...prev,
+                                      [goal.id]: val
+                                    }));
+                                  }}
+                                  onWheel={(e) => e.currentTarget.blur()}
+                                  style={{ width: "50px", textAlign: "center", border: "1px solid var(--border-color)", borderRadius: "4px" }}
+                                />
+                                <span style={{ fontSize: "12px", fontWeight: "bold" }}>%</span>
+                                {allocatedAmt > 0 && (
+                                  <span className={styles.allocValue} style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                                    ({formatCurrency(allocatedAmt)})
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {totalPercent > 100 && (
+                    <div className={styles.allocError} style={{ color: "var(--color-expense)", fontSize: "11px", fontWeight: "600", marginTop: "6px" }}>
+                      ⚠️ Total persentase alokasi melebihi 100%!
+                    </div>
+                  )}
                 </div>
               )}
 
-              <button type="submit" className={`btn btn-primary ${styles.submitBtn}`}>
+              <button type="submit" className={`btn btn-primary ${styles.submitBtn}`} disabled={totalPercent > 100}>
                 <Plus size={18} /> Simpan Transaksi
               </button>
             </div>

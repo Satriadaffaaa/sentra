@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useFinance } from "@/lib/financeContext";
 import { FinanceService } from "@/lib/financeService";
-import { Bell, AlertTriangle, Coins, Database, Check, Sparkles, Lock, Shield } from "lucide-react";
+import { Bell, AlertTriangle, Coins, Database, Check, Lock, Shield, RefreshCw } from "lucide-react";
 import styles from "./settings.module.css";
 
 export default function SettingsPage() {
@@ -31,10 +31,10 @@ export default function SettingsPage() {
   // Firebase status
   const [isFirebase, setIsFirebase] = useState(false);
 
-  // Auto-Allocation Settings state
-  const [autoAllocationEnabled, setAutoAllocationEnabled] = useState(false);
-  const [autoAllocationPercent, setAutoAllocationPercent] = useState(10);
-  const [autoAllocationGoalId, setAutoAllocationGoalId] = useState("");
+  // Real-time exchange rate states
+  const [isFetchingRates, setIsFetchingRates] = useState(false);
+  const [ratesLastUpdated, setRatesLastUpdated] = useState("");
+  const [autoExchangeRatesEnabled, setAutoExchangeRatesEnabled] = useState(true);
 
   // Passcode Settings state
   const [passcodeEnabled, setPasscodeEnabled] = useState(false);
@@ -52,11 +52,9 @@ export default function SettingsPage() {
         if (settings.exchangeRates.SGD) setSgdRate(settings.exchangeRates.SGD.toString());
         if (settings.exchangeRates.EUR) setEurRate(settings.exchangeRates.EUR.toString());
       }
-      setAutoAllocationEnabled(!!settings.autoAllocationEnabled);
-      setAutoAllocationPercent(settings.autoAllocationPercent !== undefined ? settings.autoAllocationPercent : 10);
-      setAutoAllocationGoalId(settings.autoAllocationGoalId || "");
       setPasscodeEnabled(!!settings.passcodeEnabled);
       setPasscodePIN(settings.passcodePIN || "");
+      setAutoExchangeRatesEnabled(settings.autoExchangeRatesEnabled !== false);
     }
     
     // Check firebase support
@@ -77,20 +75,65 @@ export default function SettingsPage() {
     );
   }
 
+  // Fetch real-time exchange rates from ExchangeRate-API (relative to IDR base)
+  const fetchRealtimeRates = async () => {
+    setIsFetchingRates(true);
+    try {
+      const response = await fetch("https://open.er-api.com/v6/latest/IDR");
+      if (!response.ok) throw new Error("Gagal mengambil data kurs.");
+      const data = await response.json();
+      
+      if (data && data.rates) {
+        const usdRateFromApi = data.rates.USD;
+        const sgdRateFromApi = data.rates.SGD;
+        const eurRateFromApi = data.rates.EUR;
+        
+        if (usdRateFromApi && sgdRateFromApi && eurRateFromApi) {
+          const usd = Math.round(1 / usdRateFromApi);
+          const sgd = Math.round(1 / sgdRateFromApi);
+          const eur = Math.round(1 / eurRateFromApi);
+          
+          setUsdRate(usd.toString());
+          setSgdRate(sgd.toString());
+          setEurRate(eur.toString());
+          
+          if (data.time_last_update_utc) {
+            setRatesLastUpdated(data.time_last_update_utc);
+          }
+          
+          pushNotification("Kurs mata uang berhasil diperbarui ke harga realtime. Silakan simpan untuk menerapkan.", "success");
+        } else {
+          throw new Error("Data kurs mata uang dari API tidak lengkap.");
+        }
+      } else {
+        throw new Error("Data rates tidak ditemukan.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      pushNotification(err.message || "Gagal memperbarui kurs real-time.", "error");
+    } finally {
+      setIsFetchingRates(false);
+    }
+  };
+
   // Handle saving general configurations
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const today = new Date().toISOString().split("T")[0];
       const updatedSettings = {
         ...settings,
         baseCurrency,
+        autoExchangeRatesEnabled,
         exchangeRates: {
           ...settings.exchangeRates,
           USD: Number(usdRate) || 16200,
           SGD: Number(sgdRate) || 12100,
           EUR: Number(eurRate) || 17600,
           IDR: 1
-        }
+        },
+        // If they did manual refresh or toggle, save today's date so auto-update doesn't run again today
+        ...(ratesLastUpdated ? { lastExchangeRatesFetchDate: today } : {})
       };
 
       await saveSettings(updatedSettings);
@@ -98,25 +141,6 @@ export default function SettingsPage() {
     } catch (err) {
       console.error(err);
       pushNotification("Gagal menyimpan pengaturan.", "error");
-    }
-  };
-
-  // Handle saving auto allocation settings
-  const handleSaveAllocation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const updatedSettings = {
-        ...settings,
-        autoAllocationEnabled,
-        autoAllocationPercent: Number(autoAllocationPercent) || 10,
-        autoAllocationGoalId
-      };
-
-      await saveSettings(updatedSettings);
-      pushNotification("Konfigurasi alokasi gaji otomatis berhasil diperbarui.", "success");
-    } catch (err) {
-      console.error(err);
-      pushNotification("Gagal menyimpan pengaturan alokasi.", "error");
     }
   };
 
@@ -248,8 +272,36 @@ export default function SettingsPage() {
               <span className={styles.inputHelper}>Semua saldo rekening valas akan dikonversi ke mata uang ini untuk perhitungan kekayaan bersih.</span>
             </div>
 
+            <div className="form-group" style={{ marginBottom: "16px", borderTop: "1px solid var(--border-color)", paddingTop: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <input
+                  type="checkbox"
+                  id="autoExchangeRatesEnabled"
+                  checked={autoExchangeRatesEnabled}
+                  onChange={(e) => setAutoExchangeRatesEnabled(e.target.checked)}
+                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                />
+                <label htmlFor="autoExchangeRatesEnabled" className="form-label" style={{ marginBottom: 0, cursor: "pointer", fontWeight: 600 }}>
+                  Perbarui Kurs Secara Otomatis (Harian)
+                </label>
+              </div>
+              <span className={styles.inputHelper}>Mengambil kurs pasar terbaru USD, SGD, EUR secara otomatis setiap hari saat aplikasi pertama dibuka.</span>
+            </div>
+
             <div className={styles.exchangeRatesSection}>
-              <label className="form-label">Kurs Konversi Valuta (terhadap IDR)</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Kurs Konversi Valuta (terhadap IDR)</label>
+                <button
+                  type="button"
+                  onClick={fetchRealtimeRates}
+                  disabled={isFetchingRates}
+                  className="btn btn-secondary"
+                  style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", padding: "4px 8px" }}
+                >
+                  <RefreshCw size={12} className={isFetchingRates ? styles.spinIcon : ""} />
+                  {isFetchingRates ? "Memuat..." : "Perbarui Kurs Real-Time"}
+                </button>
+              </div>
               
               <div className={styles.rateInputs}>
                 <div className={styles.rateInputGroup}>
@@ -294,6 +346,11 @@ export default function SettingsPage() {
                   <span className={styles.rateAddonRight}>IDR</span>
                 </div>
               </div>
+              {ratesLastUpdated && (
+                <span className={styles.inputHelper} style={{ display: "block", marginTop: "4px", fontSize: "10px", color: "var(--text-muted)", textAlign: "right" }}>
+                  Sumber: ExchangeRate-API. Terakhir diperbarui UTC: {ratesLastUpdated}
+                </span>
+              )}
             </div>
 
             <div className={styles.formActions}>
@@ -485,74 +542,7 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Card 3: Auto Allocation settings */}
-          <form onSubmit={handleSaveAllocation} className={`card ${styles.settingsCard}`}>
-            <div className={styles.cardHeader}>
-              <Sparkles size={20} className={styles.cardHeaderIcon} />
-              <h3>Otomatisasi & Alokasi Pemasukan</h3>
-            </div>
-            <p className={styles.cardDescription}>
-              Sisihkan sebagian dari pendapatan Gaji bulanan Anda secara otomatis ke Target Tabungan tertentu untuk membiasakan menabung secara teratur.
-            </p>
 
-            <div className="form-group">
-              <div className="flex items-center gap-3" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <input
-                  type="checkbox"
-                  id="autoAllocationEnabled"
-                  checked={autoAllocationEnabled}
-                  onChange={(e) => setAutoAllocationEnabled(e.target.checked)}
-                  style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                />
-                <label htmlFor="autoAllocationEnabled" className="form-label" style={{ marginBottom: 0, cursor: "pointer", fontWeight: 600 }}>
-                  Aktifkan Alokasi Gaji Otomatis
-                </label>
-              </div>
-              <span className={styles.inputHelper}>Jika aktif, pencatatan pemasukan kategori Gaji akan menyertakan pilihan untuk menyisihkan dana.</span>
-            </div>
-
-            {autoAllocationEnabled && (
-              <div className={styles.animateSlide} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                <div className="form-group">
-                  <label className="form-label">Persentase Penyisihan (%)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={autoAllocationPercent}
-                    onChange={(e) => setAutoAllocationPercent(Number(e.target.value))}
-                    min="1"
-                    max="100"
-                    required
-                  />
-                  <span className={styles.inputHelper}>Persentase nominal dari total gaji yang akan disisihkan (misal: 10%).</span>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Target Tabungan Tujuan</label>
-                  <select
-                    className="form-input"
-                    value={autoAllocationGoalId}
-                    onChange={(e) => setAutoAllocationGoalId(e.target.value)}
-                    required
-                  >
-                    <option value="" disabled>-- Pilih Target Tabungan --</option>
-                    {savingsGoals.map(goal => (
-                      <option key={goal.id} value={goal.id}>
-                        🎯 {goal.name} (Terkumpul: {formatCurrency(goal.currentAmount)})
-                      </option>
-                    ))}
-                  </select>
-                  <span className={styles.inputHelper}>Pilih target tabungan yang akan menerima dana otomatis ini.</span>
-                </div>
-              </div>
-            )}
-
-            <div className={styles.formActions}>
-              <button type="submit" className="btn btn-primary">
-                Simpan Alokasi
-              </button>
-            </div>
-          </form>
         </div>
 
         {/* Right Col: Database Info & Reset */}
